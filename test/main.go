@@ -1,7 +1,6 @@
 package main
 
 import (
- "./testprocess"
  "./testroute"
  "../log"
 )
@@ -13,6 +12,5 @@ func init(){
 
 
 func main() {
-  testprocess.Test()
   testroute.Test()
 }
