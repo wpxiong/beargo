@@ -4,6 +4,7 @@ import (
   "../../log"
   "../../route"
   "../../appcontext"
+  "../../http"
 )
 
 func Test() {
@@ -14,5 +15,8 @@ func Test() {
    rt.Add("/rrrr/ping/")
    rt.Add("/rrrr/ggg/")
    rt.Add("/rrrr/sss/")
-   rt.DebugInfo()
+   //rt.DebugInfo()
+   request := http.HttpRequest{Urlpath :"/xiong/wen997/ping?te=ag&rr=345" }
+   rt.ProcessRequest(&request)
+   
 }

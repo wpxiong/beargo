@@ -45,7 +45,7 @@ type RouteInfo struct {
    requestUrl     string
    paramInfo      map[string]string
    result         bool
-   controller     controller.Controller
+   controller     *controller.Controller
    request        *http.HttpRequest
    methodName     string
 }
@@ -68,10 +68,46 @@ func NewRouteProcess(appContext *appcontext.AppContext) *RouteProcess {
    return routeProcess
 }
 
+func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode) (bool, *controller.Controller) {
+   var res bool = false
+   return res,nil
+}
 
-func (rtp *RouteProcess ) processRequest(request * http.HttpRequest) *RouteInfo {
-   rinfo := &RouteInfo{}
-   return rinfo
+
+func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
+   request = strings.Trim(request," ")
+   if len(request) == 0 {
+      return false
+   }
+   componentArray := strings.Split(request,"/")
+   var res bool
+   res,_  = rtp.match(componentArray,0,rtp.treeNode.left_children)
+   if !res {
+      res,_  = rtp.match(componentArray,0,rtp.treeNode.right_children)
+   }
+   return res
+} 
+
+func (rtp *RouteProcess ) ProcessRequest(request * http.HttpRequest) *RouteInfo {
+   urlArray := strings.Split(request.Urlpath,"?")
+   length := len(urlArray)
+   if length > 0 {
+      rinfo := &RouteInfo{paramInfo : make(map[string]string)}
+      urlpath := urlArray[0]
+      rinfo.requestUrl = urlpath
+      if length >1 {
+         paramArray := strings.Split( urlArray[1],"&")
+         for _,param := range paramArray {
+            ind := strings.Index(param,"=")
+            if ind >=0 && ind < len(param) {
+               rinfo.paramInfo[param[0:ind]] = param[ind+1:]
+            }
+         }
+      }
+      rtp.urlRoute(urlpath,rinfo)
+      return rinfo
+   }
+   return nil
 }
 
 
@@ -234,6 +270,6 @@ func (this *RouteInfo) Init(requestUrl string, paramInfo map[string]string,resul
    this.requestUrl = requestUrl
    this.paramInfo = paramInfo
    this.result = result
-   this.controller = controller
+   this.controller = &controller
    this.request = request
 }
