@@ -35,9 +35,8 @@ func New(appContext *appcontext.AppContext) *WebApplication {
 
 func processWebRequest(param interface{}) interface{} {
    var rti *route.RouteInfo = param.(*route.RouteInfo)
-   var res *http.ResponseWriter = rti.Writer.HttpResponseWriter
-   log.Info(*res)
    rti.CallMethod()
+   rti.ResultChan <- 1
    return true
 }
 
@@ -54,7 +53,8 @@ func processRequest(w http.ResponseWriter, r *http.Request){
        workjob := &process.WorkJob{Parameter : rti }
        workjob.WorkProcess = processWebRequest
        process.AddJob(workjob)
-       log.Info(w)
+       _ = <- rti.ResultChan
+        
     }else {
        log.Info("not found page")
     }

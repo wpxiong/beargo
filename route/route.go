@@ -53,6 +53,7 @@ type RouteInfo struct {
    Writer         *webhttp.HttpResponse
    funcmap        reflect.Value
    methodName     string
+   ResultChan     chan int
 }
 
 func initRootTreeNode() *TreeNode {
@@ -202,6 +203,7 @@ func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteIn
       res := rtp.urlRoute(urlpath,rinfo)
       if res {
           rinfo.result = true
+          rinfo.ResultChan = make(chan int)
       }
    }
    return rinfo
