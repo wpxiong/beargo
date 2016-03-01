@@ -1,7 +1,7 @@
 package appcontext
 
 import (
-  "../log"
+  "github.com/beargo/log"
 )
 
 func init() {

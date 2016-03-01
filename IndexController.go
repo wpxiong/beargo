@@ -1,9 +1,9 @@
 package main
 
 import (
-  "./log"
-  "./controller"
-  "./route"
+  "github.com/beargo/log"
+  "github.com/beargo/controller"
+  "github.com/beargo/route"
   "fmt"
   "net/http"
 )

@@ -1,8 +1,8 @@
 package controller
 
 import (
-  "../log"
-  "../appcontext"
+  "github.com/beargo/log"
+  "github.com/beargo/appcontext"
 )
 
 

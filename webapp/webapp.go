@@ -1,12 +1,12 @@
 package webapp
 
 import (
-  "../log"
-  "../process"
-  "../route"
-  "../appcontext"
-  "../webhttp"
-  "../controller"
+  "github.com/beargo/log"
+  "github.com/beargo/process"
+  "github.com/beargo/route"
+  "github.com/beargo/appcontext"
+  "github.com/beargo/webhttp"
+  "github.com/beargo/controller"
   "strconv"
   "net/http"
 )

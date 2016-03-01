@@ -4,10 +4,10 @@ import (
   "strings"
   "regexp"
   "reflect"
-  "../controller"
-  "../appcontext"
-  "../webhttp"
-  "../log"
+  "github.com/beargo/controller"
+  "github.com/beargo/appcontext"
+  "github.com/beargo/webhttp"
+  "github.com/beargo/log"
 )
 
 func init() {

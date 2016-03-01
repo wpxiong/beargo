@@ -1,7 +1,7 @@
 package webhttp
 
 import (
-  "../log"
+  "github.com/beargo/log"
   "net/http"
 )
 

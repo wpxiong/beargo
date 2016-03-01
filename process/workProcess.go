@@ -1,7 +1,7 @@
 package process
 
 import (
-  "../log"
+  "github.com/beargo/log"
   "time"
   "sync"
 )

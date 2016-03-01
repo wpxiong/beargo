@@ -1,9 +1,9 @@
 package main
 
 import (
-  "./log"
-  "./webapp"
-  "./appcontext"
+  "github.com/beargo/log"
+  "github.com/beargo/webapp"
+  "github.com/beargo/appcontext"
   "runtime"
 )
 
