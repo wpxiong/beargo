@@ -10,25 +10,33 @@ func init() {
 
 var log *logInfo
 type logInfo struct {
-
+   debug bool
 }
 
 func (this *logInfo) infoArray(message ... interface{}) {
-   fmt.Println(message)
+   if this.debug {
+      fmt.Println(message)
+   }
 }
 
 
 func (this *logInfo) info(message interface{}) {
-   fmt.Println(message)
+   if this.debug {
+     fmt.Println(message)
+   }
 }
 
 func (this *logInfo) infoArrayNoReturn(message ... interface{}) {
-   fmt.Print(message)
+  if this.debug {
+    fmt.Print(message)
+  }
 }
 
 
 func (this *logInfo) infoNoReturn(message interface{}) {
-   fmt.Print(message)
+  if this.debug {
+     fmt.Print(message)
+  }
 }
 
 func InitLog() {
