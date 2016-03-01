@@ -29,6 +29,33 @@ type ControllerMethod interface {
 	Head()
 }
 
+func (con *Controller) Before() {
+
+}
+
+func (con *Controller) After() {
+
+}
+
+func (con *Controller) Get() {
+
+}
+
+func (con *Controller) Post() {
+
+}
+
+func (con *Controller) Delete() {
+
+}
+
+func (con *Controller) Put() {
+
+}
+
+func (con *Controller) Head() {
+
+}
 
 func (con *Controller) getData() map[interface{}]interface{} {
    return con.data

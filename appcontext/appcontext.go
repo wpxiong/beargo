@@ -9,5 +9,6 @@ func init() {
 }
 
 type AppContext struct {
-   config string
+  Config string
+  Port int
 }
