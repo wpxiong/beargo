@@ -1,12 +1,12 @@
 package webapp
 
 import (
-  "github.com/beargo/log"
-  "github.com/beargo/process"
-  "github.com/beargo/route"
-  "github.com/beargo/appcontext"
-  "github.com/beargo/webhttp"
-  "github.com/beargo/controller"
+  "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/process"
+  "github.com/wpxiong/beargo/route"
+  "github.com/wpxiong/beargo/appcontext"
+  "github.com/wpxiong/beargo/webhttp"
+  "github.com/wpxiong/beargo/controller"
   "strconv"
   "net/http"
 )

@@ -1,8 +1,8 @@
 package controller
 
 import (
-  "github.com/beargo/log"
-  "github.com/beargo/appcontext"
+  "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/appcontext"
 )
 
 

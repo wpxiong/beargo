@@ -1,7 +1,7 @@
 package process
 
 import (
-  "github.com/beargo/log"
+  "github.com/wpxiong/beargo/log"
   "time"
   "sync"
 )

@@ -1,7 +1,7 @@
 package webhttp
 
 import (
-  "github.com/beargo/log"
+  "github.com/wpxiong/beargo/log"
   "net/http"
 )
 
