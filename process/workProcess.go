@@ -55,7 +55,7 @@ type WorkProcess struct {
 var workprocess *WorkProcess
 
 func startReceiveWorkProcess(this *WorkProcess) {
-   log.Info("start workProcess")
+   log.Debug("start workProcess")
    var job *WorkJob
    this.mutex.Lock()
    this.status = Start
@@ -63,7 +63,7 @@ func startReceiveWorkProcess(this *WorkProcess) {
    for true {
      select {
        case job = <- this.processReceiveChan :
-          log.Info("receive new workJob")
+          log.Debug("receive new workJob")
           duration := time.Now().Sub(job.workReceiveTime)
           if (duration.Seconds() / 1000 < float64(this.processTimeOut)) {
              this.processWork(job)
@@ -76,7 +76,7 @@ func startReceiveWorkProcess(this *WorkProcess) {
              job.mutex.Unlock()
           }
        case _ = <- this.processFinishChan :
-          log.Info("stop workProcess")
+          log.Debug("stop workProcess")
           this.mutex.Lock()
           this.status = Stop
           this.mutex.Unlock()
@@ -88,7 +88,7 @@ func startReceiveWorkProcess(this *WorkProcess) {
 
 
 func (this *WorkProcess) Init_Default () {
-   log.Info("start WorkJob")
+   log.Debug("start WorkJob")
    this.Init(DefaultMaxProcessCount,DefaultWorkListMaxCount,DefaultTimeOut)
 }
 
@@ -108,7 +108,7 @@ func (this *WorkProcess) Init (maxProcessCount int , workListMaxCount int , proc
 
 
 func (this *WorkProcess) stopProcessWork () {
-   log.Info("stop WorkJob")
+   log.Debug("stop WorkJob")
    for i:=0; i < this.maxProcessCount ; i++  {
       this.processFinishChan <- 1
    }
@@ -120,7 +120,7 @@ func (this *WorkProcess) stopProcessWork () {
    this.mutex.Lock()
    this.status = Finish
    this.mutex.Unlock()
-   log.Info("finish WorkJob")
+   log.Debug("finish WorkJob")
 }
 
 
@@ -128,14 +128,14 @@ func (this *WorkProcess) processWork(workJob *WorkJob){
    workJob.mutex.Lock()
    workJob.workStartTime = time.Now()
    workJob.mutex.Unlock()
-   log.Info("work process start")
+   log.Debug("work process start")
    if workJob.WorkProcess != nil {
       result := workJob.WorkProcess(workJob.Parameter)
       workJob.mutex.Lock()
       workJob.Result = result
       workJob.mutex.Unlock()
    }
-   log.Info("workProcess end")
+   log.Debug("workProcess end")
    workJob.mutex.Lock()
    workJob.workEndTime = time.Now()
    workJob.workProcessTime = workJob.workEndTime.Sub(workJob.workStartTime)

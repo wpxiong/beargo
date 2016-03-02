@@ -15,9 +15,9 @@ func init() {
 }
 
 type ParaInfo struct {
-    paraName string
-    paraType string
-    paraValue string
+    ParaName string
+    ParaType string
+    ParaValue string
 }
 
 
@@ -45,7 +45,7 @@ type RouteProcess struct {
 
 type RouteInfo struct {
    requestUrl     string
-   paramInfo      map[string]string
+   ParamInfo      map[string]string
    UrlParamInfo   []ParaInfo
    result         bool
    controller     controller.ControllerMethod
@@ -84,11 +84,25 @@ func (rtp *RouteInfo ) GetResult() bool {
    return rtp.result
 }
 
+func (rtp *RouteInfo ) InitAppContext(app *appcontext.AppContext) {
+   app.Request = rtp.Request
+   app.Writer = rtp.Writer
+   app.Parameter = make(map[string]interface{})
+   for _,param := range rtp.UrlParamInfo {
+       app.Parameter[param.ParaName] = app.Convert(param.ParaValue,param.ParaType)
+   }
+   log.Debug(app.Parameter)
+   
+}
+
 
 func (rtp *RouteInfo ) CallMethod() {
     var funcmap reflect.Value = rtp.getFuncmap()
+    var appContext *appcontext.AppContext = &appcontext.AppContext{}
+    appContext.CopyAppContext(routeProcess.ctx)
+    rtp.InitAppContext(appContext)
     v := make([]reflect.Value, 1)
-    v[0] = reflect.ValueOf(rtp)
+    v[0] = reflect.ValueOf(appContext)
     funcmap.Call(v)
 }
 
@@ -124,7 +138,7 @@ func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[stri
               pa := []ParaInfo{}
               for i,reval := range reglist {
                  if i >0 {
-                    pa = append(pa,ParaInfo{paraName : treeNode.paraInfo[i-1].paraName, paraType : treeNode.paraInfo[i-1].paraType, paraValue: reval})
+                    pa = append(pa,ParaInfo{ParaName : treeNode.paraInfo[i-1].ParaName, ParaType : treeNode.paraInfo[i-1].ParaType, ParaValue: reval})
                  }
               }
               (*paraList)[len(*paraList)-1] = pa
@@ -185,7 +199,7 @@ func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
 
 func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteInfo {
    urlArray := strings.Split(request.Urlpath,"?")
-   rinfo := &RouteInfo{paramInfo : make(map[string]string), UrlParamInfo: []ParaInfo{}}
+   rinfo := &RouteInfo{ParamInfo : make(map[string]string), UrlParamInfo: []ParaInfo{}}
    rinfo.result = false
    length := len(urlArray)
    if length > 0 {
@@ -196,7 +210,7 @@ func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteIn
          for _,param := range paramArray {
             ind := strings.Index(param,"=")
             if ind >=0 && ind < len(param) {
-               rinfo.paramInfo[param[0:ind]] = param[ind+1:]
+               rinfo.ParamInfo[param[0:ind]] = param[ind+1:]
             }
          }
       }
@@ -211,44 +225,44 @@ func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteIn
 
 
 func (node *TreeNode ) debugInfo() {
-    log.InfoNoReturn("{nodeValue:" + node.nodeValue + ",left_children:[")
+    log.DebugNoReturn("{nodeValue:" + node.nodeValue + ",left_children:[")
     var k int = 0
     for _,nodep := range node.left_children {
        if nodep != nil {
          nodep.debugInfo()
          if k != len(node.left_children) -1 {
-           log.InfoNoReturn(",")
+           log.DebugNoReturn(",")
          }
        }
        k++
     }
     k=0
-    log.InfoNoReturn("],right_children:[")
+    log.DebugNoReturn("],right_children:[")
     for _,nodep := range node.right_children {
        if nodep != nil {
          nodep.debugInfo()
          if k != len(node.right_children) -1 {
-           log.InfoNoReturn(",")
+           log.DebugNoReturn(",")
          }
        }
        k++
     }
-    log.InfoNoReturn("]")
-    log.Info("}")
+    log.DebugNoReturn("]")
+    log.Debug("}")
 }
 
 func (routeInfo *RouteInfo ) DebugInfo() {
-   log.InfoNoReturn("{result:")
-   log.InfoNoReturn(routeInfo.result)
-   log.InfoNoReturn(",UrlParamInfo:[")
+   log.DebugNoReturn("{result:")
+   log.DebugNoReturn(routeInfo.result)
+   log.DebugNoReturn(",UrlParamInfo:[")
    for k,pam := range routeInfo.UrlParamInfo {
-      log.InfoNoReturn(pam)
+      log.DebugNoReturn(pam)
       if k != len(routeInfo.UrlParamInfo) -1 {
-        log.InfoNoReturn(",")
+        log.DebugNoReturn(",")
       }
    }
-   log.InfoNoReturn("],methodName:" + routeInfo.methodName)
-   log.Info("}")
+   log.DebugNoReturn("],methodName:" + routeInfo.methodName)
+   log.Debug("}")
 }
 
 func (rtp *RouteProcess ) DebugInfo() {
@@ -327,8 +341,8 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
               paramname = ""
               paramtype = ""
            }else if ch == '>' {
-              par.paraType, reg = rtp.paramTypeCheck(paramtype)
-              par.paraName = paramname
+              par.ParaType, reg = rtp.paramTypeCheck(paramtype)
+              par.ParaName = paramname
               nodename = nodename + reg
               paraArray = append(paraArray,*par)
               parseType = false
@@ -357,7 +371,7 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
           var error_Info error
           regstr,error_Info =  regexp.Compile(nodename)
           if error_Info != nil {
-             log.Info("Error : " + pathPattern)
+             log.Error("Error : " + pathPattern)
           }
         }
         treeNode.nodeValue = nodename
@@ -407,17 +421,13 @@ func (this *RouteInfo) getRequestInfo() string {
    return this.requestUrl
 }
 
-func (this *RouteInfo) getParamInfo() map[string]string {
-   return this.paramInfo
-}
-
 func (this *RouteInfo) getMatchResult() bool {
    return this.result
 }
 
 func (this *RouteInfo) Init(requestUrl string, paramInfo map[string]string,result bool,controller controller.ControllerMethod,request * webhttp.HttpRequest) {
    this.requestUrl = requestUrl
-   this.paramInfo = paramInfo
+   this.ParamInfo = paramInfo
    this.result = result
    this.controller = controller
    this.Request = request
