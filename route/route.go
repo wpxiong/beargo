@@ -220,6 +220,7 @@ func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteIn
           rinfo.ResultChan = make(chan int)
       }
    }
+   log.Debug(rinfo)
    return rinfo
 }
 

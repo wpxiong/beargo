@@ -52,7 +52,22 @@ func (this *logInfo) printObjectReturn(level LogLevel,message interface{}) {
 func InitLog() {
    if log == nil {
      log = &logInfo{loglevel : InfoLevel}
-     fmt.Println("start log")
+   }
+}
+
+func InitLogWithLevel(level string) {
+   var logLevel LogLevel = InfoLevel
+   if level == "Debug" {
+      logLevel = DebugLevel
+   }else if level == "Error"  {
+      logLevel = ErrorLevel
+   }else if level == "Trace"  {
+      logLevel = TraceLevel
+   }
+   if log == nil {
+      log = &logInfo{loglevel : logLevel}
+   }else {
+      log.loglevel = logLevel
    }
 }
 
