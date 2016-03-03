@@ -75,7 +75,6 @@ func processRequest(w http.ResponseWriter, r *http.Request){
 }
 
 func startProcess(web *WebApplication){
-<<<<<<< HEAD
     requestTimeout := web.AppContext.ConfigContext.ConfigParam["request.timeout"].(string)
     var resqTimeout,respTimeout int
     var err error
@@ -97,9 +96,6 @@ func startProcess(web *WebApplication){
 	   MaxHeaderBytes: 1 << 20,
 	}
     err = server.ListenAndServe()
-=======
-    err := http.ListenAndServe(":" + strconv.Itoa(web.AppContext.ConfigContext.Port) ,nil)
->>>>>>> origin/master
     if err != nil {
         log.DebugNoReturn("ListenAndServe: ")
         log.ErrorArray("Error",err)
