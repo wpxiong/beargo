@@ -18,8 +18,12 @@ type ConvertFunc func(string)(interface{})
 type AppConfigContext struct {
    ConfigPath  string
    Port  int
+<<<<<<< HEAD
    ConvertList  map[string] ConvertFunc
    ConfigParam  map[string]interface{}
+=======
+   ConvertList map[string] ConvertFunc
+>>>>>>> origin/master
 }
   
 type AppContext struct {
@@ -30,6 +34,7 @@ type AppContext struct {
   Writer         *webhttp.HttpResponse
 }
 
+<<<<<<< HEAD
 func readLines(path string) (lines []string, err error) {
     var linesarray = make([]string,100) 
     filereader,error := os.Open(path)
@@ -82,21 +87,27 @@ func (ctx *AppConfigContext) LoadConfig() {
    }
 }
 
+=======
+>>>>>>> origin/master
 func (ctx *AppContext) InitAppContext(ConfigPath string , Port int) {
    if ctx.ConfigContext == nil {
       ctx.ConfigContext = &AppConfigContext{ConfigPath :ConfigPath, Port:Port}
    }
    ctx.ConfigContext.ConvertList = make(map[string]ConvertFunc)
+<<<<<<< HEAD
    ctx.ConfigContext.ConfigParam = make(map[string](interface{}))
    if ctx.ConfigContext.ConfigPath != ""{
       ctx.ConfigContext.LoadConfig()
       log.Debug(ctx.ConfigContext.ConfigParam)
    }
    
+=======
+>>>>>>> origin/master
 }
 
 func (ctx *AppContext) AddConvertFunctiont(paramType string,function ConvertFunc) {
     ctx.ConfigContext.ConvertList[paramType] = function
+<<<<<<< HEAD
 }
 
 func (ctx *AppContext) CopyAppContext(frmctx *AppContext) {
@@ -113,3 +124,21 @@ func (ctx *AppContext) Convert(valStr string,valType string) interface{} {
     }
 }
 
+=======
+}
+
+func (ctx *AppContext) CopyAppContext(frmctx *AppContext) {
+   ctx.Data = make(map[interface{}]interface{})
+   ctx.ConfigContext = frmctx.ConfigContext
+}
+
+func (ctx *AppContext) Convert(valStr string,valType string) interface{} {
+    function := ctx.ConfigContext.ConvertList[valType]
+    if function != nil {
+       return function(valStr)
+    }else {
+       return valStr
+    }
+}
+
+>>>>>>> origin/master

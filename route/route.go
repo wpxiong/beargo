@@ -46,6 +46,10 @@ type RouteProcess struct {
 
 type RouteInfo struct {
    requestUrl     string
+<<<<<<< HEAD
+=======
+   ParamInfo      map[string]string
+>>>>>>> origin/master
    UrlParamInfo   []ParaInfo
    result         bool
    controller     controller.ControllerMethod
@@ -101,7 +105,10 @@ func (rtp *RouteInfo ) CallMethod() {
     var appContext *appcontext.AppContext = &appcontext.AppContext{}
     appContext.CopyAppContext(routeProcess.ctx)
     rtp.InitAppContext(appContext)
+<<<<<<< HEAD
     httprequestutil.ProcessHttpRequestParam(appContext)
+=======
+>>>>>>> origin/master
     v := make([]reflect.Value, 1)
     v[0] = reflect.ValueOf(appContext)
     funcmap.Call(v)
@@ -200,12 +207,28 @@ func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
 
 func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteInfo {
    urlArray := strings.Split(request.Urlpath,"?")
+<<<<<<< HEAD
    rinfo := &RouteInfo{UrlParamInfo: []ParaInfo{}}
+=======
+   rinfo := &RouteInfo{ParamInfo : make(map[string]string), UrlParamInfo: []ParaInfo{}}
+>>>>>>> origin/master
    rinfo.result = false
    length := len(urlArray)
    if length > 0 {
       urlpath := urlArray[0]
       rinfo.requestUrl = urlpath
+<<<<<<< HEAD
+=======
+      if length >1 {
+         paramArray := strings.Split( urlArray[1],"&")
+         for _,param := range paramArray {
+            ind := strings.Index(param,"=")
+            if ind >=0 && ind < len(param) {
+               rinfo.ParamInfo[param[0:ind]] = param[ind+1:]
+            }
+         }
+      }
+>>>>>>> origin/master
       res := rtp.urlRoute(urlpath,rinfo)
       if res {
           rinfo.result = true
@@ -420,6 +443,10 @@ func (this *RouteInfo) getMatchResult() bool {
 
 func (this *RouteInfo) Init(requestUrl string,result bool,controller controller.ControllerMethod,request * webhttp.HttpRequest) {
    this.requestUrl = requestUrl
+<<<<<<< HEAD
+=======
+   this.ParamInfo = paramInfo
+>>>>>>> origin/master
    this.result = result
    this.controller = controller
    this.Request = request
