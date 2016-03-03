@@ -1,8 +1,8 @@
 package testprocess
 
 import (
-  "../../log"
-  "../../process"
+  "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/process"
   "runtime"
   "time"
 )
