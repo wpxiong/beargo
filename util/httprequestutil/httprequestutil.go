@@ -14,12 +14,14 @@ func init() {
 func MapMerge(dst, src url.Values) *url.Values{
     var valuesMap url.Values = make(map[string][]string)
     for key, value := range dst {
+        log.Debug("xxx",value[0])
         if valuesMap[key] == nil {
           valuesMap[key] = make([]string,len(value))
         }
         valuesMap[key] = append(valuesMap[key],value...)
     }
     for key, value := range src {
+       log.Debug("yy",value[0])
        if valuesMap[key] == nil {
          valuesMap[key] = value
        }else {
@@ -54,6 +56,7 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
     formParameter["xiong"] = []string{"gag"}
     paramMap := MapMerge(getParameter,formParameter)
     for key,value := range *paramMap {
+        log.Debug(len(value))
         if len(value) == 1{
            appContext.Parameter[key] = value[0]
         }else {
