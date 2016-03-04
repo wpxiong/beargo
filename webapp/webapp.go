@@ -51,6 +51,7 @@ func New(appContext *appcontext.AppContext) *WebApplication {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
       InitDefaultConvertFunction(appContext)
       filter.InitFilter()
+      filter.AddDefaultFilter()
    }
    return webApp;
 }

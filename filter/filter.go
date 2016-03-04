@@ -12,8 +12,8 @@ func init() {
 type FilterFunc func(*appcontext.AppContext)(bool)
 
 type  Filter  struct {
-   AfterFilter  map[string] FilterFunc
-   BeforeFilter map[string] FilterFunc
+   AfterFilter  [] FilterFunc
+   BeforeFilter [] FilterFunc
 }
 
 var filterManager *Filter 
@@ -21,18 +21,46 @@ var filterManager *Filter
 
 func InitFilter() {
   if filterManager == nil {
-      filterManager = &Filter{}
+      filterManager = &Filter{BeforeFilter:make([] FilterFunc,0),AfterFilter:make([] FilterFunc,0)}
   }
 }
 
-func ProcessBeforeFilter(){
-
+func ProcessBeforeFilter(context *appcontext.AppContext) bool {
+   for _,filterF := range filterManager.BeforeFilter {
+      res := filterF(context)
+      if !res {
+         return false
+      }
+   }
+   return true
 }
 
-func ProcessAfterFilter(){
-
+func ProcessAfterFilter(context *appcontext.AppContext) bool {
+   for _,filterF := range filterManager.AfterFilter {
+      res := filterF(context)
+      if !res {
+         return false
+      }
+   }
+   return true
 }
 
+func AddDefaultFilter(){
+  AddBeforeFilterList(ParameterParseFilter,ParameterBinderFilter)
+}
+
+func AddBeforeFilterList (filterFunc... FilterFunc){
+   for _, filterF := range filterFunc {
+       filterManager.AddBeforeFilter(filterF)
+   }
+}
+
+
+func AddAfterFilterList (filterFunc... FilterFunc){
+   for _, filterF := range filterFunc {
+       filterManager.AddAfterFilter(filterF)
+   }
+}
 
 func AddBeforeFilter (filterFunc FilterFunc){
    filterManager.AddBeforeFilter(filterFunc)
@@ -44,11 +72,9 @@ func AddAfterFilter (filterFunc FilterFunc){
 
 
 func (filter *Filter) AddBeforeFilter (filterFunc FilterFunc){
-
-
+   filter.BeforeFilter = append(filter.BeforeFilter,filterFunc)
 }
 
 func (filter *Filter) AddAfterFilter (filterFunc FilterFunc){
-
-
+   filter.AfterFilter = append(filter.AfterFilter,filterFunc)
 }

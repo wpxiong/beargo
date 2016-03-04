@@ -97,12 +97,21 @@ func (rtp *RouteInfo ) InitAppContext(app *appcontext.AppContext) {
 }
 
 
+func (rtp *RouteInfo ) ResourceClean(appContext *appcontext.AppContext) {
+  log.Debug("ResourceClean")
+}
+
+
 func (rtp *RouteInfo ) CallMethod() {
     var funcmap reflect.Value = rtp.getFuncmap()
     var appContext *appcontext.AppContext = &appcontext.AppContext{ControllerMethodInfo :rtp.methodInfo}
     appContext.CopyAppContext(routeProcess.ctx)
     rtp.InitAppContext(appContext)
-    filter.ProcessBeforeFilter()
+    res := filter.ProcessBeforeFilter(appContext)
+    defer rtp.ResourceClean(appContext)
+    if !res {
+       return 
+    }
     paramCount := appContext.ControllerMethodInfo.Type.NumIn()
     v := make([]reflect.Value,paramCount-1)
     for i :=1 ; i< paramCount;i++ {
@@ -114,7 +123,10 @@ func (rtp *RouteInfo ) CallMethod() {
        }
     }
     funcmap.Call(v)
-    filter.ProcessAfterFilter()
+    res = filter.ProcessAfterFilter(appContext)
+    if !res {
+       return 
+    }
 }
 
 
