@@ -11,7 +11,7 @@ func init() {
 }
 
 
-type Controller struct {	
+type Controller struct {
 }
 
 type ControllerMethod interface {

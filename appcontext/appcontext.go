@@ -6,6 +6,7 @@ import (
   "strings"
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/webhttp"
+  "reflect"
 )
 
 
@@ -28,6 +29,8 @@ type AppContext struct {
   Parameter     map[string]interface{}
   Request        *webhttp.HttpRequest
   Writer         *webhttp.HttpResponse
+  ControllerMethodInfo  *reflect.Method
+  ControlParameter []interface{}
 }
 
 func readLines(path string) (lines []string, err error) {

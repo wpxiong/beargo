@@ -8,6 +8,7 @@ import (
   "github.com/wpxiong/beargo/webhttp"
   "github.com/wpxiong/beargo/controller"
   "github.com/wpxiong/beargo/util"
+  "github.com/wpxiong/beargo/filter"
   "strconv"
   "time"
   "net/http"
@@ -20,6 +21,12 @@ func init() {
   log.InitLog()
 }
 
+type FilterType int 
+
+const (
+    BeforeFilter   FilterType = iota
+    AfterFilter 
+)
 
 type  WebApplication struct {
    WorkProcess *process.WorkProcess
@@ -43,6 +50,7 @@ func New(appContext *appcontext.AppContext) *WebApplication {
    if webApp == nil {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
       InitDefaultConvertFunction(appContext)
+      filter.InitFilter()
    }
    return webApp;
 }
@@ -106,6 +114,16 @@ func startProcess(web *WebApplication){
 func (web *WebApplication) AddRoute(urlPattern string,controller controller.ControllerMethod,method string) {
    web.RouteProcess.Add(urlPattern,controller,method)
 }
+
+func (web *WebApplication) AddFilter(filterfunc filter.FilterFunc,filterType FilterType) {
+   switch filterType {
+     case BeforeFilter:
+        filter.AddBeforeFilter(filterfunc)
+     case AfterFilter:
+        filter.AddAfterFilter(filterfunc)
+   }
+}
+
 
 func (web *WebApplication) Start() {
     go startProcess(web)

@@ -8,7 +8,7 @@ import (
   "github.com/wpxiong/beargo/appcontext"
   "github.com/wpxiong/beargo/webhttp"
   "github.com/wpxiong/beargo/log"
-  "github.com/wpxiong/beargo/util/httprequestutil"
+  "github.com/wpxiong/beargo/filter"
 )
 
 func init() {
@@ -33,6 +33,7 @@ type TreeNode struct {
     nodeValue  string
     controller controller.ControllerMethod
     funcmap    reflect.Value
+    methodInfo reflect.Method
     paraInfo   []ParaInfo
     regstr     *regexp.Regexp
 }
@@ -51,7 +52,8 @@ type RouteInfo struct {
    controller     controller.ControllerMethod
    Request        *webhttp.HttpRequest
    Writer         *webhttp.HttpResponse
-   funcmap        reflect.Value
+   funcmap        *reflect.Value
+   methodInfo     *reflect.Method
    methodName     string
    ResultChan     chan int
 }
@@ -77,7 +79,7 @@ func NewRouteProcess(appContext *appcontext.AppContext) *RouteProcess {
 }
 
 func (rtp *RouteInfo ) getFuncmap() reflect.Value {
-   return rtp.funcmap
+   return (*rtp.funcmap)
 }
 
 func (rtp *RouteInfo ) GetResult() bool {
@@ -92,44 +94,53 @@ func (rtp *RouteInfo ) InitAppContext(app *appcontext.AppContext) {
        app.Parameter[param.ParaName] = app.Convert(param.ParaValue,param.ParaType)
    }
    log.Debug(app.Parameter)
-   
 }
 
 
 func (rtp *RouteInfo ) CallMethod() {
     var funcmap reflect.Value = rtp.getFuncmap()
-    var appContext *appcontext.AppContext = &appcontext.AppContext{}
+    var appContext *appcontext.AppContext = &appcontext.AppContext{ControllerMethodInfo :rtp.methodInfo}
     appContext.CopyAppContext(routeProcess.ctx)
     rtp.InitAppContext(appContext)
-    httprequestutil.ProcessHttpRequestParam(appContext)
-    v := make([]reflect.Value, 1)
-    v[0] = reflect.ValueOf(appContext)
+    filter.ProcessBeforeFilter()
+    paramCount := appContext.ControllerMethodInfo.Type.NumIn()
+    v := make([]reflect.Value,paramCount-1)
+    for i :=1 ; i< paramCount;i++ {
+       switch appContext.ControllerMethodInfo.Type.In(i).String() {
+           case "*appcontext.AppContext":
+              v[i-1] = reflect.ValueOf(appContext)
+           default:
+              v[i-1] = reflect.ValueOf(appContext.ControlParameter[i-1])
+       }
+    }
     funcmap.Call(v)
+    filter.ProcessAfterFilter()
 }
 
 
-func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode, paraList *[][]ParaInfo) (bool, controller.ControllerMethod,reflect.Value) {
+func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode, paraList *[][]ParaInfo) (bool, controller.ControllerMethod,*reflect.Value,*reflect.Method) {
    *paraList = (append(*paraList,[]ParaInfo{}))
    if index >= len(urlcom) {
-      return false,nil,reflect.Value{}
+      return false,nil,nil,nil
    }
    var res bool = false
-   var funcm reflect.Value
+   var funcm *reflect.Value
+   var methodInfo *reflect.Method
    for _,treeNode := range treeNodemap {
       if !treeNode.isReg {
           if urlcom[index] == treeNode.nodeValue {
               if !treeNode.isLeafNode {
                 var control  controller.ControllerMethod
-                res,control,funcm = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
+                res,control,funcm,methodInfo = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
                 if !res {
                    *paraList = (*paraList)[:len(*paraList)-1]
-                   res,control,funcm = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
-                   return res,control,funcm
+                   res,control,funcm,methodInfo = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
+                   return res,control,funcm,methodInfo
                 }else {
-                   return res,control,funcm
+                   return res,control,funcm,methodInfo
                 }
               }else {
-                return true,treeNode.controller,treeNode.funcmap
+                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo
               }
           }
       }else {
@@ -145,22 +156,22 @@ func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[stri
               (*paraList)[len(*paraList)-1] = pa
               if !treeNode.isLeafNode {
                 var control  controller.ControllerMethod
-                res,control,funcm = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
+                res,control,funcm,methodInfo = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
                 if !res {
                    *paraList = (*paraList)[:len(*paraList)-1]
-                   res,control,funcm = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
-                   return res,control,funcm
+                   res,control,funcm,methodInfo = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
+                   return res,control,funcm,methodInfo
                 }else {
-                   return res,control,funcm
+                   return res,control,funcm,methodInfo
                 }
               }else {
-                return true,treeNode.controller,treeNode.funcmap
+                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo
               }
           }
       }
      
    }
-   return res,nil,reflect.Value{}
+   return res,nil,nil,nil
 }
 
 
@@ -181,10 +192,12 @@ func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
    var res bool
    var paraList [][]ParaInfo
    var controller controller.ControllerMethod
-   var funcmap reflect.Value
-   res,controller,funcmap  = rtp.match(componentArray,0,rtp.treeNode.left_children,&paraList)
+   var funcmap *reflect.Value
+   var methodInfo *reflect.Method
+   
+   res,controller,funcmap,methodInfo  = rtp.match(componentArray,0,rtp.treeNode.left_children,&paraList)
    if !res {
-      res,controller,funcmap  = rtp.match(componentArray,0,rtp.treeNode.right_children,&paraList)
+      res,controller,funcmap,methodInfo  = rtp.match(componentArray,0,rtp.treeNode.right_children,&paraList)
    }
    if res {
      rtinfo.controller = controller
@@ -195,6 +208,7 @@ func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
      }
    }
    rtinfo.funcmap = funcmap
+   rtinfo.methodInfo = methodInfo
    return res
 } 
 
@@ -281,18 +295,18 @@ func (rtp *RouteProcess ) paramTypeCheck(typestr string) (string,string) {
 }
 
 
-func (rtp *RouteProcess ) checkMethod (controller controller.ControllerMethod,method string) *reflect.Value {
+func (rtp *RouteProcess ) checkMethod (controller controller.ControllerMethod,method string) (*reflect.Value,*reflect.Method) {
   controllerType := reflect.TypeOf(controller)
   for i := 0; i < controllerType.NumMethod(); i++ {
      methodstr := controllerType.Method(i)
      methodName := methodstr.Name
      firstLetter := string(methodName[0])
-     if methodstr.Type.NumIn() == 2  && firstLetter == strings.ToUpper(firstLetter) && strings.ToLower(methodName) ==  strings.ToLower(method) {
+     if firstLetter == strings.ToUpper(firstLetter) && strings.ToLower(methodName) ==  strings.ToLower(method) {
         var methodfu reflect.Value = reflect.ValueOf(controller).MethodByName(methodName)
-        return &methodfu
+        return &methodfu,&methodstr
      }
   }
-  return nil
+  return nil,nil
 }
 
 
@@ -371,9 +385,12 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
         if k == len(componentArray) -1 {
            treeNode.isLeafNode = true
            treeNode.controller = controller
-           var meth *reflect.Value= rtp.checkMethod(controller,method)
+           var methodInfo *reflect.Method
+           var meth *reflect.Value
+           meth,methodInfo = rtp.checkMethod(controller,method)
            if meth != nil {
                treeNode.funcmap  = *meth
+               treeNode.methodInfo  = *methodInfo
            }
         }
         if(!hasReg){
