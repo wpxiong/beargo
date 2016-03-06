@@ -116,7 +116,7 @@ func (rtp *RouteInfo ) CallMethod() {
     }
     v := make([]reflect.Value,2)
     v[0] = reflect.ValueOf(appContext)
-    v[1] = reflect.ValueOf(reflect.New(rtp.formType).Elem().Interface())
+    v[1] = reflect.ValueOf(appContext.Form)
     defer func() {
         if err := recover(); err != nil {
             log.Debug("Call Controller Method Error")

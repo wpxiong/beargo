@@ -31,7 +31,7 @@ type AppContext struct {
   Writer         *webhttp.HttpResponse
   ControllerMethodInfo  *reflect.Method
   FormType          reflect.Type
-  ControlParameter []interface{}
+  Form              interface{}
 }
 
 func readLines(path string) (lines []string, err error) {
@@ -111,6 +111,7 @@ func (ctx *AppContext) CopyAppContext(frmctx *AppContext) {
 func (ctx *AppContext) Convert(valStr string,valType string) interface{} {
     function := ctx.ConfigContext.ConvertList[valType]
     if function != nil {
+       log.Debug(function)
        return function(valStr)
     }else {
        return valStr

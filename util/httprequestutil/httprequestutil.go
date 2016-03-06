@@ -5,6 +5,7 @@ import (
   "github.com/wpxiong/beargo/appcontext"
   "net/url"
   "mime/multipart"
+  "strings"
 )
 
 func init() {
@@ -53,12 +54,17 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
         log.Debug(len(value))
         log.Debug(value)
         if len(value) == 1{
-           log.Debug("xxx" + value[0])
            appContext.Parameter[key] = value[0]
         }else {
            appContext.Parameter[key] = value
         }
     }
     log.Debug(filesParameter)
+    for key,val := range appContext.Parameter {
+      if key != strings.ToLower(key) {
+         appContext.Parameter[strings.ToLower(key)] = val
+         delete(appContext.Parameter,key)
+      }
+    }
     log.Debug(appContext.Parameter)
 }
