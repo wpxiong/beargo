@@ -12,6 +12,7 @@ import (
   "strconv"
   "time"
   "net/http"
+  "reflect"
 )
 
 
@@ -112,8 +113,9 @@ func startProcess(web *WebApplication){
     }
 }
 
-func (web *WebApplication) AddRoute(urlPattern string,controller controller.ControllerMethod,method string) {
-   web.RouteProcess.Add(urlPattern,controller,method)
+func (web *WebApplication) AddRoute(urlPattern string,controller controller.ControllerMethod,method string,form interface{}) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.Add(urlPattern,controller,method,formType)
 }
 
 func (web *WebApplication) AddFilter(filterfunc filter.FilterFunc,filterType FilterType) {

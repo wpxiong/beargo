@@ -30,6 +30,7 @@ type AppContext struct {
   Request        *webhttp.HttpRequest
   Writer         *webhttp.HttpResponse
   ControllerMethodInfo  *reflect.Method
+  FormType          reflect.Type
   ControlParameter []interface{}
 }
 

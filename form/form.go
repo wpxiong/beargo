@@ -8,8 +8,6 @@ func init() {
   log.InitLog()
 }
 
-type Form struct {
-   
-}
+type Form interface{}
 
 
