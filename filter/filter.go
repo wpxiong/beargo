@@ -47,6 +47,7 @@ func ProcessAfterFilter(context *appcontext.AppContext) bool {
 
 func AddDefaultFilter(){
   AddBeforeFilterList(ParameterParseFilter,ParameterBinderFilter)
+  AddAfterFilterList(RenderFilter) 
 }
 
 func AddBeforeFilterList (filterFunc... FilterFunc){
