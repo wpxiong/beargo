@@ -123,33 +123,36 @@ func initializeStruct(t reflect.Type, v reflect.Value,param map[string] interfac
   }
 }
 
+func BinderSliceElement(valueKind reflect.Kind, val string, structField reflect.Value) {
+    switch valueKind {
+      case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+        BinderInt(&structField,val)
+      case reflect.String:
+        BinderString(&structField,val)
+      case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+        BinderUint(&structField,val)
+      case reflect.Float32,reflect.Float64:
+        BinderFloat(&structField,val)
+    }
+}
+
+
 func BinderSlice(name string ,field *reflect.Value ,filedtype reflect.Type, paramValue interface{}){
-   
    switch paramValue.(type) {
       case []string :
-        slice := reflect.MakeSlice(filedtype, len(paramValue.([]string)), len(paramValue.([]string)))
-        //element := slice.Index(0)
-        tf := reflect.TypeOf("dd")
-        for k,str := range paramValue.([]string) {
-           log.Debug("1111")
-           arrayElement := slice.Index(k)
-           log.Debug("2222")
-           v := reflect.ValueOf(&arrayElement).Elem()
-           log.Debug("3333")
-           mapparam := make(map[string] interface{})
-           mapparam[name] = str
-           log.Debug("44444")
-           log.Debug(tf)
-           //BinderByType(v,tf,mapparam,name)
-           log.Debug(v)
-           log.Debug(tf)
-           log.Debug(mapparam)
-           log.Debug(name)
-           log.Debug("555")
+        numElems := len(paramValue.([]string))
+        element := paramValue.([]string)
+        slice := reflect.MakeSlice(filedtype,numElems,numElems)
+        sliceOf := filedtype.Elem().Kind()
+        for i := 0; i < numElems; i++ {
+           BinderSliceElement(sliceOf,element[i],slice.Index(i))
         }
         field.Set(slice)
       case string :
         slice := reflect.MakeSlice(filedtype, 1, 1)
+        element := paramValue.([]string)
+        sliceOf := filedtype.Elem().Kind()
+        BinderSliceElement(sliceOf,element[0],slice.Index(0))
         field.Set(slice)
       default:
    }
