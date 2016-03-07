@@ -6,6 +6,9 @@ import (
   "net/url"
   "mime/multipart"
   "strings"
+  "bytes"
+  "encoding/json"
+  "reflect"
 )
 
 func init() {
@@ -48,6 +51,18 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
             formParameter = appContext.Request.HttpRequest.MultipartForm.Value
             filesParameter = appContext.Request.HttpRequest.MultipartForm.File
         }
+      case "application/json" :
+        bufbody := new(bytes.Buffer)
+        bufbody.ReadFrom(appContext.Request.HttpRequest.Body)
+        var objmap map[string] interface{}
+        err := json.Unmarshal(bufbody.Bytes(),&objmap)
+        if err != nil {
+            log.Error("process application/json error")
+        } else {
+            for key,val := range objmap {
+               appContext.Parameter[key] = val
+            }
+        }
     }
     paramMap := MapMerge(getParameter,formParameter)
     for key,value := range *paramMap {
@@ -60,11 +75,34 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
         }
     }
     log.Debug(filesParameter)
-    for key,val := range appContext.Parameter {
-      if key != strings.ToLower(key) {
-         appContext.Parameter[strings.ToLower(key)] = val
-         delete(appContext.Parameter,key)
-      }
-    }
+    pam := reflect.ValueOf(appContext.Parameter).Interface()
+    ConvertMapKeyToLower(&pam)
     log.Debug(appContext.Parameter)
+}
+
+
+func ConvertMapKeyToLower(mapInfo *interface{}){
+  switch reflect.TypeOf(*mapInfo).Kind(){
+     case reflect.Map:
+       newParamap := (*mapInfo).(map[string]interface{})
+       for key,mapval := range newParamap {
+           if mapval != nil {
+              ConvertMapKeyToLower(&mapval)
+              newParamap[strings.ToLower(key)] = mapval
+              if key != strings.ToLower(key) {
+                 delete(newParamap,key)
+              }
+              log.Debug(newParamap)
+           }
+       }
+    case reflect.Array:
+       if mapInfo != nil {
+          var arraylist []interface{} = (*mapInfo).([]interface{})
+          for i,val2 := range arraylist {
+             ConvertMapKeyToLower(&val2)
+             arraylist[i] = val2
+          }
+       }
+    default:
+   }
 }

@@ -46,7 +46,15 @@ func GetParamValueFloat(paramValue interface{}) (float64,error) {
 
 func GetParamValueInt(paramValue interface{}) (int64,error) {
   switch paramValue.(type) {
-     case int,int8,int16,int32,int64:
+     case int:
+       return int64(paramValue.(int)),nil
+     case int8:
+       return int64(paramValue.(int8)),nil
+     case int16:
+       return int64(paramValue.(int16)),nil
+     case int32:
+       return int64(paramValue.(int32)),nil
+     case int64:
        return paramValue.(int64),nil
      case string:
        val,err:= strconv.Atoi(paramValue.(string))
@@ -77,7 +85,6 @@ func GetParamValueUint(paramValue interface{}) (uint64,error) {
 }
 
 
-
 func BinderByType(f reflect.Value, ft reflect.Type, param map[string] interface{},name string){
   switch ft.Kind() {
     case reflect.Map:
@@ -89,14 +96,34 @@ func BinderByType(f reflect.Value, ft reflect.Type, param map[string] interface{
     case reflect.Chan:
       f.Set(reflect.MakeChan(ft, 0))
     case reflect.Struct:
-      initializeStruct(ft, f,param)
+      mapp := param[strings.ToLower(name)]
+      var newParamap map[string]interface{}
+      if mapp != nil {
+         switch reflect.TypeOf(mapp).Kind(){
+            case reflect.Map:
+              newParamap = mapp.(map[string]interface{})
+              initializeStruct(ft, f,newParamap)
+         }
+      }
     case reflect.Ptr:
       fv := reflect.New(ft.Elem())
-      initializeStruct(ft.Elem(), fv.Elem(),param)
+      mapp := param[strings.ToLower(name)]
+      var newParamap map[string]interface{}
+      if mapp != nil {
+         switch reflect.TypeOf(mapp).Kind(){
+            case reflect.Map:
+              newParamap = mapp.(map[string]interface{})
+         }
+      }
+      initializeStruct(ft.Elem(), fv.Elem(),newParamap)
       f.Set(fv)
     case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
       if param[strings.ToLower(name)] != nil {
         BinderInt(&f,param[strings.ToLower(name)])
+      }
+    case reflect.Bool:
+      if param[strings.ToLower(name)] != nil {
+        BinderBool(&f,param[strings.ToLower(name)])
       }
     case reflect.Float32,reflect.Float64:
       if param[strings.ToLower(name)] != nil {
@@ -108,7 +135,6 @@ func BinderByType(f reflect.Value, ft reflect.Type, param map[string] interface{
       }
     case reflect.String:
       if param[strings.ToLower(name)] != nil {
-        log.Debug("66666")
         BinderString(&f,param[strings.ToLower(name)])
       }
     default:
@@ -133,6 +159,8 @@ func BinderSliceElement(valueKind reflect.Kind, val string, structField reflect.
         BinderUint(&structField,val)
       case reflect.Float32,reflect.Float64:
         BinderFloat(&structField,val)
+      case reflect.Bool:
+        BinderBool(&structField,val)
     }
 }
 
@@ -166,6 +194,16 @@ func BinderInt(field *reflect.Value , paramValue interface{}){
      field.SetInt(intVal)
   }
 }
+
+
+func BinderBool(field *reflect.Value , paramValue interface{}){
+   if strings.ToLower(paramValue.(string)) == "true" {
+      field.SetBool(true)
+   }else {
+      field.SetBool(false)
+   }
+}
+
 
 func BinderFloat(field *reflect.Value , paramValue interface{}){
   intValue,err := GetParamValueFloat(paramValue)
@@ -205,7 +243,6 @@ func Binder(field *reflect.Value , paramValue interface{}) {
 }
 
 func BinderParameter(appcon *appcontext.AppContext){
-   log.Debug("BinderParameter Start")
    v := reflect.New(appcon.FormType)
    initializeStruct(appcon.FormType, v.Elem(),appcon.Parameter)
    appcon.Form = v.Interface()
