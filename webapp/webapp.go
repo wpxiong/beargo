@@ -70,7 +70,7 @@ func processWebRequest(param interface{}) interface{} {
 
 func processRequest(w http.ResponseWriter, r *http.Request){
     path := r.URL.Path
-    log.Info(path)
+    log.Info("Request Url: " + path )
     request := webhttp.HttpRequest{Urlpath : path, HttpRequest : r }
     response := webhttp.HttpResponse{HttpResponseWriter:&w}
     var rti *route.RouteInfo

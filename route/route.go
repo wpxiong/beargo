@@ -37,6 +37,7 @@ type TreeNode struct {
     paraInfo   []ParaInfo
     regstr     *regexp.Regexp
     formType       reflect.Type
+    UrlPath        string
 }
 
 
@@ -58,6 +59,7 @@ type RouteInfo struct {
    methodName     string
    ResultChan     chan int
    formType       reflect.Type
+   UrlPath        string
 }
 
 func initRootTreeNode() *TreeNode {
@@ -91,6 +93,7 @@ func (rtp *RouteInfo ) GetResult() bool {
 func (rtp *RouteInfo ) InitAppContext(app *appcontext.AppContext) {
    app.Request = rtp.Request
    app.Writer = rtp.Writer
+   app.UrlPath = rtp.UrlPath
    app.Parameter = make(map[string]interface{})
    for _,param := range rtp.UrlParamInfo {
        app.Parameter[param.ParaName] = app.Convert(param.ParaValue,param.ParaType)
@@ -123,7 +126,6 @@ func (rtp *RouteInfo ) CallMethod() {
             res = filter.ProcessAfterFilter(appContext)
         }
     }()
-    log.Debug(v)
     funcmap.Call(v)
     res = filter.ProcessAfterFilter(appContext)
     if !res {
@@ -132,30 +134,31 @@ func (rtp *RouteInfo ) CallMethod() {
 }
 
 
-func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode, paraList *[][]ParaInfo) (bool, controller.ControllerMethod,*reflect.Value,*reflect.Method,reflect.Type) {
+func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode, paraList *[][]ParaInfo) (bool, controller.ControllerMethod,*reflect.Value,*reflect.Method,reflect.Type,string) {
    *paraList = (append(*paraList,[]ParaInfo{}))
    if index >= len(urlcom) {
-      return false,nil,nil,nil,nil
+      return false,nil,nil,nil,nil,""
    }
    var res bool = false
    var funcm *reflect.Value
    var methodInfo *reflect.Method
    var formType  reflect.Type
+   var urlpath string
    for _,treeNode := range treeNodemap {
       if !treeNode.isReg {
           if urlcom[index] == treeNode.nodeValue {
               if !treeNode.isLeafNode {
                 var control  controller.ControllerMethod
-                res,control,funcm,methodInfo,formType = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
+                res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
                 if !res {
                    *paraList = (*paraList)[:len(*paraList)-1]
-                   res,control,funcm,methodInfo,formType = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
-                   return res,control,funcm,methodInfo,formType
+                   res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
+                   return res,control,funcm,methodInfo,formType,urlpath
                 }else {
-                   return res,control,funcm,methodInfo,formType
+                   return res,control,funcm,methodInfo,formType,urlpath
                 }
               }else {
-                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType
+                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType,treeNode.UrlPath
               }
           }
       }else {
@@ -171,22 +174,22 @@ func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[stri
               (*paraList)[len(*paraList)-1] = pa
               if !treeNode.isLeafNode {
                 var control  controller.ControllerMethod
-                res,control,funcm,methodInfo,formType = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
+                res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
                 if !res {
                    *paraList = (*paraList)[:len(*paraList)-1]
-                   res,control,funcm,methodInfo,formType = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
-                   return res,control,funcm,methodInfo,formType
+                   res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
+                   return res,control,funcm,methodInfo,formType,urlpath
                 }else {
-                   return res,control,funcm,methodInfo,formType
+                   return res,control,funcm,methodInfo,formType,urlpath
                 }
               }else {
-                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType
+                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType,treeNode.UrlPath
               }
           }
       }
      
    }
-   return res,nil,nil,nil,nil
+   return res,nil,nil,nil,nil,""
 }
 
 
@@ -210,9 +213,10 @@ func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
    var funcmap *reflect.Value
    var methodInfo *reflect.Method
    var formType reflect.Type
-   res,controller,funcmap,methodInfo,formType  = rtp.match(componentArray,0,rtp.treeNode.left_children,&paraList)
+   var urlpath string
+   res,controller,funcmap,methodInfo,formType,urlpath  = rtp.match(componentArray,0,rtp.treeNode.left_children,&paraList)
    if !res {
-      res,controller,funcmap,methodInfo,formType  = rtp.match(componentArray,0,rtp.treeNode.right_children,&paraList)
+      res,controller,funcmap,methodInfo,formType,urlpath  = rtp.match(componentArray,0,rtp.treeNode.right_children,&paraList)
    }
    if res {
      rtinfo.controller = controller
@@ -225,6 +229,7 @@ func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
    rtinfo.funcmap = funcmap
    rtinfo.methodInfo = methodInfo
    rtinfo.formType = formType
+   rtinfo.UrlPath = urlpath
    return res
 } 
 
@@ -337,6 +342,7 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
    }
    componentArray := strings.Split(pathPattern,"/")
    var parentNode *TreeNode = rtp.treeNode
+   var urlPathIndex int = len(componentArray)
    for k, com := range componentArray {
      if len(com) == 0 {
         continue
@@ -352,12 +358,17 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
         var parseName ,parseType = false,false
         var nodename  string = ""
         var reg string
+        var firstParameter bool = false
         var regstr *regexp.Regexp
         if len(com) == 0 {
           continue
         }
         for _,ch := range com {
            if ch == '<' {
+              if !firstParameter {
+                urlPathIndex = k
+              }
+              firstParameter = true
               par = &ParaInfo{}
               parseName = true
               paramname = ""
@@ -401,6 +412,7 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
            treeNode.isLeafNode = true
            treeNode.controller = controller
            treeNode.formType = formType
+           treeNode.UrlPath = strings.Join(componentArray[:urlPathIndex],"/")
            var methodInfo *reflect.Method
            var meth *reflect.Value
            meth,methodInfo = rtp.checkMethod(controller,method)

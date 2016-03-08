@@ -6,8 +6,8 @@ import (
   "github.com/wpxiong/beargo/memorycash"
   "github.com/wpxiong/beargo/process"
   "github.com/wpxiong/beargo/appcontext"
-  //"io/ioutil"
-  //"path/filepath"
+  "os"
+  "path/filepath"
   "net/http"
 )
 
@@ -25,6 +25,7 @@ type RenderInfo struct {
    TemplateList      map[string]*template.Template
    TemplateCount     int
    OutPutData        interface{}
+   UrlPath           string
 }
 
 func processRender(param interface{}) interface{} {
@@ -96,9 +97,10 @@ func StartTemplateManager(){
    getManager()
 }
 
-func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter) *RenderInfo {
+func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter,urlPath string) *RenderInfo {
    if this.useProcess {
-     var info *RenderInfo = &RenderInfo{FinishSingal: make(chan int)}
+     log.Debug("URL PATH: " + urlPath)
+     var info *RenderInfo = &RenderInfo{FinishSingal: make(chan int),UrlPath:urlPath}
      return info
    }else {
      return &RenderInfo{}
@@ -106,9 +108,26 @@ func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter) *Render
 }
 
 func (this *RenderManager) compileTemplate() error {
-   var res error = nil
-   
-   return res
+   var err error = nil
+   err = filepath.Walk(this.templateFilePath, 
+      func(path string, info os.FileInfo, err error) error {
+         if !info.IsDir() {
+            rel, err := filepath.Rel(this.templateFilePath, path)
+            if err != nil {
+               log.Debug(rel)
+            }
+            return nil
+         }
+         rel, err := filepath.Rel(this.templateFilePath, path)
+         if err != nil {
+            log.Debug(rel)
+         }
+         return nil
+    })
+   if err != nil {
+      log.Error(err)
+   }
+   return err
 }
 
 func CompileTemplate() error {
@@ -122,5 +141,5 @@ func CompileTemplate() error {
 
 
 func CreateRenderInfo(app *appcontext.AppContext) *RenderInfo {
-   return getManager().createRenderInfo(app.Writer.HttpResponseWriter)  
+   return getManager().createRenderInfo(app.Writer.HttpResponseWriter,app.UrlPath)  
 }
