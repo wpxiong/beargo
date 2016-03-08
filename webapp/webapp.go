@@ -15,6 +15,7 @@ import (
   "os"
   "net/http"
   "reflect"
+  "strings"
 )
 
 
@@ -38,6 +39,11 @@ type  WebApplication struct {
    IsStart bool
    control  chan int
 }
+
+const (
+  RESOURCE_PATH = "/resource"
+  RESOURCE_FOLDER = "./views/public/"
+)
 
 var webApp *WebApplication
 
@@ -70,6 +76,11 @@ func processWebRequest(param interface{}) interface{} {
 
 func processRequest(w http.ResponseWriter, r *http.Request){
     path := r.URL.Path
+    if strings.HasPrefix(path,RESOURCE_PATH) {
+       filePath := RESOURCE_FOLDER + path[len(RESOURCE_PATH):]
+       http.ServeFile(w, r,filePath)
+       return 
+    }
     log.Info("Request Url: " + path )
     request := webhttp.HttpRequest{Urlpath : path, HttpRequest : r }
     response := webhttp.HttpResponse{HttpResponseWriter:&w}

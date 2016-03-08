@@ -147,18 +147,22 @@ func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[stri
    for _,treeNode := range treeNodemap {
       if !treeNode.isReg {
           if urlcom[index] == treeNode.nodeValue {
-              if !treeNode.isLeafNode {
-                var control  controller.ControllerMethod
-                res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
-                if !res {
+              if index == len(urlcom) -1 {
+                 if !treeNode.isLeafNode {
+                    return false,nil,nil,nil,nil,""
+                 }else {
+                    return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType,treeNode.UrlPath
+                 }
+              } else {
+                 var control  controller.ControllerMethod
+                 res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
+                 if !res {
                    *paraList = (*paraList)[:len(*paraList)-1]
                    res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
                    return res,control,funcm,methodInfo,formType,urlpath
-                }else {
+                 }else {
                    return res,control,funcm,methodInfo,formType,urlpath
-                }
-              }else {
-                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType,treeNode.UrlPath
+                 }
               }
           }
       }else {
@@ -172,18 +176,22 @@ func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[stri
                  }
               }
               (*paraList)[len(*paraList)-1] = pa
-              if !treeNode.isLeafNode {
-                var control  controller.ControllerMethod
-                res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
-                if !res {
+              if index == len(urlcom) -1 {
+                 if !treeNode.isLeafNode {
+                    return false,nil,nil,nil,nil,""
+                 }else {
+                    return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType,treeNode.UrlPath
+                 }
+              } else {
+                 var control  controller.ControllerMethod
+                 res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.left_children,paraList)
+                 if !res {
                    *paraList = (*paraList)[:len(*paraList)-1]
                    res,control,funcm,methodInfo,formType,urlpath = rtp.match(urlcom,index + 1,treeNode.right_children,paraList)
                    return res,control,funcm,methodInfo,formType,urlpath
-                }else {
+                 }else {
                    return res,control,funcm,methodInfo,formType,urlpath
-                }
-              }else {
-                return true,treeNode.controller,&treeNode.funcmap,&treeNode.methodInfo,treeNode.formType,treeNode.UrlPath
+                 }
               }
           }
       }

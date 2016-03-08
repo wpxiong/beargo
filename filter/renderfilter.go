@@ -16,6 +16,7 @@ func RenderFilter(app *appcontext.AppContext) bool {
    log.Debug("RenderFilter Start")
    var renderInfo *render.RenderInfo = render.CreateRenderInfo(app)
    var outputData interface{} = reflect.ValueOf([]string{"xxxx"}).Interface()
+   renderInfo.InitRenderInfo(app)
    renderInfo.RenderProcess(outputData)
    return true
 }
