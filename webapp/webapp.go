@@ -9,8 +9,10 @@ import (
   "github.com/wpxiong/beargo/controller"
   "github.com/wpxiong/beargo/util"
   "github.com/wpxiong/beargo/filter"
+  "github.com/wpxiong/beargo/render"
   "strconv"
   "time"
+  "os"
   "net/http"
   "reflect"
 )
@@ -53,6 +55,8 @@ func New(appContext *appcontext.AppContext) *WebApplication {
       InitDefaultConvertFunction(appContext)
       filter.InitFilter()
       filter.AddDefaultFilter()
+      pwd, _ := os.Getwd()
+      render.SetDefaultTemplateDir(pwd)
    }
    return webApp;
 }
@@ -76,7 +80,7 @@ func processRequest(w http.ResponseWriter, r *http.Request){
        rti.Writer =&response
        workjob := &process.WorkJob{Parameter : rti }
        workjob.WorkProcess = processWebRequest
-       process.AddJob(workjob)
+       process.AddJob(webApp.WorkProcess,workjob)
        _ = <- rti.ResultChan
         
     }else {
@@ -127,13 +131,21 @@ func (web *WebApplication) AddFilter(filterfunc filter.FilterFunc,filterType Fil
    }
 }
 
+func (web *WebApplication) SetTemplateWorkDictionary(folerpath string){
+   render.SetTemplateDir(folerpath)
+}
 
 func (web *WebApplication) Start() {
     go startProcess(web)
+    render.StartTemplateManager()
+    if err := render.CompileTemplate();err != nil {
+       log.Error(err)
+       return
+    }
     web.WorkProcess.Init_Default()
     res := <- web.control
     if res == 1 {
-       process.StopWork()
+       process.StopWork(webApp.WorkProcess)
        log.Debug("Stop WebApplication")
     }
 }

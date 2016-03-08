@@ -52,7 +52,6 @@ type WorkProcess struct {
    mutex *sync.Mutex
 }
 
-var workprocess *WorkProcess
 
 func startReceiveWorkProcess(this *WorkProcess) {
    log.Debug("start workProcess")
@@ -155,23 +154,21 @@ func (this *WorkProcess) addJob(workJob *WorkJob) {
 }
 
 
+func AddJob(work *WorkProcess,workJob *WorkJob){
+  if work != nil {
+     work.addJob(workJob)
+  }
+}
+
 func New() *WorkProcess {
-   if workprocess == nil {
-      workprocess = &WorkProcess{}
-   }
+   workprocess := &WorkProcess{}
    return workprocess;
 }
 
-
-
-func StopWork(){
-  if workprocess != nil {
-     workprocess.stopProcessWork()
+func StopWork(work *WorkProcess){
+  if work != nil {
+     work.stopProcessWork()
   }
+  work = nil
 }
 
-func AddJob(workJob *WorkJob){
-  if workprocess != nil {
-     workprocess.addJob(workJob)
-  }
-}
