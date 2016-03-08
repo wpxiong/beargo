@@ -1,16 +1,14 @@
 # beargo
-simple go web framework
+beargo is a simple  web framework which is writted by golang 
 
-This project is a sample webapp which uses beargo webframework
+Beargo provides dynamic routing, parameter parsing, and parameter auto binding
 
-go get -u github.com/wpxiong/beargo
+templating and process filter function.
 
-go get -u github.com/wpxiong/beargotestwebapp
+the version1.0 will be completed on 2016/5.
 
-cd $GOPATH/wpxiong/beargotestwebapp
+the next version will include parameter validation, db model auto create and 
 
-go build
+memorary cash function.
 
-go run beargotestwebapp
 
-http://localhost:9001/test/945
