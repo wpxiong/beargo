@@ -10,6 +10,7 @@ import (
   "github.com/wpxiong/beargo/util"
   "github.com/wpxiong/beargo/filter"
   "github.com/wpxiong/beargo/render"
+  "github.com/wpxiong/beargo/constvalue"
   "strconv"
   "time"
   "os"
@@ -38,12 +39,10 @@ type  WebApplication struct {
    AppContext *appcontext.AppContext
    IsStart bool
    control  chan int
+   resourceUrlPath  string
 }
 
-const (
-  RESOURCE_PATH = "/resource"
-  RESOURCE_FOLDER = "./views/public/"
-)
+
 
 var webApp *WebApplication
 
@@ -55,13 +54,14 @@ func InitDefaultConvertFunction(appContext *appcontext.AppContext){
   appContext.AddConvertFunctiont("Bool",util.StringToBool)
 }
 
-func New(appContext *appcontext.AppContext) *WebApplication {
+func New(appContext *appcontext.AppContext, funcMap map[string]filter.FilterFunc) *WebApplication {
    if webApp == nil {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
       InitDefaultConvertFunction(appContext)
       filter.InitFilter()
-      filter.AddDefaultFilter()
+      filter.AddInitFilter(appContext,funcMap)
       pwd, _ := os.Getwd()
+      webApp.resourceUrlPath = appContext.GetConfigValue(constvalue.RESOURCE_PATH_KEY,constvalue.DEFAULT_RESOURCE_PATH).(string)
       render.SetDefaultTemplateDir(pwd)
    }
    return webApp;
@@ -76,8 +76,8 @@ func processWebRequest(param interface{}) interface{} {
 
 func processRequest(w http.ResponseWriter, r *http.Request){
     path := r.URL.Path
-    if strings.HasPrefix(path,RESOURCE_PATH) {
-       filePath := RESOURCE_FOLDER + path[len(RESOURCE_PATH):]
+    if strings.HasPrefix(path,webApp.resourceUrlPath) {
+       filePath := constvalue.RESOURCE_FOLDER + path[len(webApp.resourceUrlPath):]
        http.ServeFile(w, r,filePath)
        return 
     }
@@ -100,14 +100,14 @@ func processRequest(w http.ResponseWriter, r *http.Request){
 }
 
 func startProcess(web *WebApplication){
-    requestTimeout := web.AppContext.ConfigContext.ConfigParam["request.timeout"].(string)
+    requestTimeout := web.AppContext.GetConfigValue(constvalue.REQUEST_TIMEOUT_KEY,constvalue.DEFAULT_REQUEST_TIMEOUT).(string)
     var resqTimeout,respTimeout int
     var err error
     resqTimeout,err =  strconv.Atoi(requestTimeout)
     if err == nil {
        resqTimeout = Default_TimeOut
     }
-    responseTimeout := web.AppContext.ConfigContext.ConfigParam["response.timeout"].(string)
+    responseTimeout := web.AppContext.GetConfigValue(constvalue.RESPONSE_TIMEOUT_KEY,constvalue.DEFAULT_RESPONSE_TIMEOUT).(string)
     respTimeout,err =  strconv.Atoi(responseTimeout)
     if err == nil {
        respTimeout = Default_TimeOut
@@ -157,6 +157,6 @@ func (web *WebApplication) Start() {
     res := <- web.control
     if res == 1 {
        process.StopWork(webApp.WorkProcess)
-       log.Debug("Stop WebApplication")
+       log.Info("Stop WebApplication")
     }
 }

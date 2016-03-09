@@ -3,6 +3,7 @@ package filter
 import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/appcontext"
+  "github.com/wpxiong/beargo/constvalue"
 )
 
 func init() {
@@ -44,6 +45,29 @@ func ProcessAfterFilter(context *appcontext.AppContext) bool {
    }
    return true
 }
+
+func AddInitFilter(context *appcontext.AppContext, funcMap map[string]FilterFunc){
+   beforeFilterList :=  context.GetConfigValue(constvalue.BEFORE_FILTER_KEY,constvalue.DEFULT_BEFORE_FILTER).([]string)
+   afterFilterList :=  context.GetConfigValue(constvalue.AFTER_FILTER_KEY,constvalue.DEFULT_AFTER_FILTER).([]string)
+   var beforeFuncList []FilterFunc = make([]FilterFunc ,0,0)
+   for _,key := range beforeFilterList{
+      val := funcMap[key]
+      if val != nil {
+        beforeFuncList = append(beforeFuncList,val)
+      }
+   }
+   
+   var afterFuncList []FilterFunc = make([]FilterFunc ,0,0)
+   for _,key := range afterFilterList{
+      val := funcMap[key]
+      if val != nil {
+        afterFuncList = append(afterFuncList,val)
+      }
+   }
+   AddBeforeFilterList(beforeFuncList...)
+   AddAfterFilterList(afterFuncList...)
+}
+
 
 func AddDefaultFilter(){
   AddBeforeFilterList(ParameterParseFilter,ParameterBinderFilter)

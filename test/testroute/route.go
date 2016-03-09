@@ -13,7 +13,6 @@ type IndexControl struct {
 }
 
 func (*IndexControl) Index(ctx *appcontext.AppContext){
-  log.Debug("test")
 }
 
 

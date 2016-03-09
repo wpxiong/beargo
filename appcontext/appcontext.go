@@ -7,6 +7,7 @@ import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/webhttp"
   "reflect"
+  "regexp"
 )
 
 
@@ -36,6 +37,29 @@ type AppContext struct {
   Renderinfo     interface{}
 }
 
+
+func (ctx *AppContext) GetConfigValue(key string,defaultValue interface{}) interface{} {
+   val := ctx.ConfigContext.ConfigParam[key]
+   switch reflect.TypeOf(val).Kind() {
+      case reflect.String:
+         if val == nil {
+           return defaultValue
+         }else {
+           return val
+         }
+      case reflect.Slice:
+         if val == nil {
+           return defaultValue
+         }else {
+           return val.([]string)
+         }
+      default:
+         return val
+   }
+  
+}
+
+
 func readLines(path string) (lines []string, err error) {
     var linesarray = make([]string,100) 
     filereader,error := os.Open(path)
@@ -60,25 +84,49 @@ func (ctx *AppConfigContext) LoadConfig() {
       log.Error("read config file error!")
    }else{
       for _,line := range lines {
+        line = strings.Trim(line," ")
+        if len(line) == 0 || strings.HasPrefix(line,"#"){
+           continue
+        }
         words := strings.Split(line,"=")
         if len(words) >= 2 { 
            pamname,pamval := words[0],words[1]
            pamname = strings.Trim(pamname," ")
+           var pamvalList []string 
+           var isArray bool = true
            pamval = strings.Trim(pamval," ")
+           result,err := regexp.MatchString(`^\[.*\]$`,pamval)
+           if !result || err != nil {
+              isArray = false
+           }else {
+              pamvalList = strings.Split(pamval[1:len(pamval)-1],",")
+           }
            if (pamname != ""){
              if ctx.ConfigParam[pamname] == nil {
-                ctx.ConfigParam[pamname] = pamval
+                if !isArray{
+                   ctx.ConfigParam[pamname] = pamval
+                }else {
+                   ctx.ConfigParam[pamname] = pamvalList
+                }
              }else {
                switch  ctx.ConfigParam[pamname].(type) {
                   case string:
                      preval := ctx.ConfigParam[pamname].(string)
                      var list []string = make([]string,2)
                      list = append(list,preval)
-                     list = append(list,pamval)
+                     if !isArray{
+                       list = append(list,pamval)
+                     }else {
+                       list = append(list,pamvalList...)
+                     }
                      ctx.ConfigParam[pamname] = list
                   case []string:
                      var list []string = ctx.ConfigParam[pamname].([]string)
-                     list = append(list,pamval)
+                     if !isArray{
+                       list = append(list,pamval)
+                     }else {
+                       list = append(list,pamvalList...)
+                     }
                      ctx.ConfigParam[pamname] = list
                }
              }
