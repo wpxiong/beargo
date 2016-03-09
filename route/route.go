@@ -21,6 +21,9 @@ type ParaInfo struct {
     ParaValue string
 }
 
+const (
+  DEFAULT_URL = "/index"
+)
 
 type TreeNode struct {
     parent     *TreeNode
@@ -98,7 +101,6 @@ func (rtp *RouteInfo ) InitAppContext(app *appcontext.AppContext) {
    for _,param := range rtp.UrlParamInfo {
        app.Parameter[param.ParaName] = app.Convert(param.ParaValue,param.ParaType)
    }
-   log.Debug(app.Parameter)
 }
 
 
@@ -122,7 +124,7 @@ func (rtp *RouteInfo ) CallMethod() {
     v[1] = reflect.ValueOf(appContext.Form)
     defer func() {
         if err := recover(); err != nil {
-            log.Debug("Call Controller Method Error")
+            log.Error("Call Controller Method Error")
             res = filter.ProcessAfterFilter(appContext)
         }
     }()
@@ -351,6 +353,7 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
    componentArray := strings.Split(pathPattern,"/")
    var parentNode *TreeNode = rtp.treeNode
    var urlPathIndex int = len(componentArray)
+   var firstParameter bool = false
    for k, com := range componentArray {
      if len(com) == 0 {
         continue
@@ -366,7 +369,6 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
         var parseName ,parseType = false,false
         var nodename  string = ""
         var reg string
-        var firstParameter bool = false
         var regstr *regexp.Regexp
         if len(com) == 0 {
           continue
@@ -421,6 +423,9 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
            treeNode.controller = controller
            treeNode.formType = formType
            treeNode.UrlPath = strings.Join(componentArray[:urlPathIndex],"/")
+           if strings.Trim(treeNode.UrlPath," ") == ""{
+              treeNode.UrlPath = DEFAULT_URL
+           }
            var methodInfo *reflect.Method
            var meth *reflect.Value
            meth,methodInfo = rtp.checkMethod(controller,method)

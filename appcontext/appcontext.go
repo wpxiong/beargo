@@ -33,6 +33,7 @@ type AppContext struct {
   FormType          reflect.Type
   Form              interface{}
   UrlPath        string
+  Renderinfo     interface{}
 }
 
 func readLines(path string) (lines []string, err error) {

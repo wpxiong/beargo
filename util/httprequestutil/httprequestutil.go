@@ -66,18 +66,15 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
     }
     paramMap := MapMerge(getParameter,formParameter)
     for key,value := range *paramMap {
-        log.Debug(len(value))
-        log.Debug(value)
         if len(value) == 1{
            appContext.Parameter[key] = value[0]
         }else {
            appContext.Parameter[key] = value
         }
     }
-    log.Debug(filesParameter)
     pam := reflect.ValueOf(appContext.Parameter).Interface()
     ConvertMapKeyToLower(&pam)
-    log.Debug(appContext.Parameter)
+    log.Debug(filesParameter)
 }
 
 
@@ -92,7 +89,6 @@ func ConvertMapKeyToLower(mapInfo *interface{}){
               if key != strings.ToLower(key) {
                  delete(newParamap,key)
               }
-              log.Debug(newParamap)
            }
        }
     case reflect.Array:

@@ -56,7 +56,6 @@ func processRender(param interface{}) interface{} {
    size := len(renderInfo.TemplateList)
    filepathList := make([]string,0,size)
    var firstTemplate *webtemplate.Template 
-   log.Debug(renderInfo.TemplateList)
    for _,temp := range renderInfo.TemplateList {
       if firstTemplate == nil && temp != nil {
          firstTemplate = temp
@@ -67,7 +66,7 @@ func processRender(param interface{}) interface{} {
    }
    var err error = errors.New("Template File is not Found")
    if firstTemplate != nil {
-      err = firstTemplate.Render(renderInfo.Writer,filepathList,param)
+      err = firstTemplate.Render(renderInfo.Writer,filepathList,renderInfo.OutPutData)
    }
    if err != nil {
       log.Error("Render Page Failture")
@@ -79,7 +78,7 @@ func processRender(param interface{}) interface{} {
 }
 
 
-func (this *RenderInfo) RenderProcess(interface{}) interface{} {
+func (this *RenderInfo) RenderProcess(data interface{}) interface{} {
     log.Debug("RenderProcess Start")
     if rendermanager.useProcess {
        workjob := &process.WorkJob{ Parameter : this }
@@ -105,7 +104,6 @@ type RenderManager struct {
 
 func SetDefaultTemplateDir(workDir string){
    filePath = workDir + DEFAULT_TEMPLATE_FOLDER
-   log.Debug("Template Dir: " + filePath)
 }
 
 func SetTemplateDir(folderPath string){
@@ -133,7 +131,6 @@ func StartTemplateManager(){
 
 func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter,urlPath string) *RenderInfo {
    if this.useProcess {
-     log.Debug("URL PATH: " + urlPath)
      var info *RenderInfo = &RenderInfo{FinishSingal: make(chan int),UrlPath:urlPath}
      info.Writer = writer
      return info
@@ -145,7 +142,6 @@ func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter,urlPath 
 func (this *RenderManager) parseTemplateFile(templateFile *webtemplate.Template) {
    filePath := filepath.Join(this.templateFilePath,templateFile.FilePath)
    var ext string = filepath.Ext(filePath)
-   log.Debug(templateFile.FilePath)
    if strings.HasPrefix(templateFile.FilePath,INCLUDE_FOLDER) {
       this.includetemplateList = append(rendermanager.includetemplateList,templateFile)
    } else if strings.HasPrefix(templateFile.FilePath,LAYOUT_FOLDER){
@@ -194,7 +190,6 @@ func CompileTemplate() error {
       log.Error(err)
       return err
    }
-   log.Debug(getManager().pagetemplateList)
    return nil
 }
 

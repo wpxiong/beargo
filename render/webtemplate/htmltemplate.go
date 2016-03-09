@@ -14,6 +14,11 @@ type HtmlTemplate struct {
    Template
 }
 
+type  Indform struct{
+  Name   string
+  Password  string
+}
+
 
 func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepathList []string,output interface{}) error {
    log.Debug("RenderHTMLTemplate Start")
