@@ -15,41 +15,43 @@ type Controller struct {
 }
 
 type ControllerMethod interface {
-	Before(ctx   *appcontext.AppContext)
-	After(ctx   *appcontext.AppContext)
-	Get(ctx   *appcontext.AppContext)
-	Post(ctx   *appcontext.AppContext)
-	Delete(ctx   *appcontext.AppContext)
-	Put(ctx   *appcontext.AppContext)
-	Head(ctx   *appcontext.AppContext)
+	Before(ctx   *appcontext.AppContext,form interface{}) bool
+	After(ctx   *appcontext.AppContext,form interface{}) bool
+	Get(ctx   *appcontext.AppContext,form interface{})
+	Post(ctx   *appcontext.AppContext,form interface{})
+	Delete(ctx   *appcontext.AppContext,form interface{})
+	Put(ctx   *appcontext.AppContext,form interface{})
+	Head(ctx   *appcontext.AppContext,form interface{})
 }
 
 
-func (con *Controller) Before(ctx  *appcontext.AppContext) {
+func (con *Controller) Before(ctx  *appcontext.AppContext,form interface{}) bool {
+  log.Debug("Before Function Start")
+  return true
+}
+
+func (con *Controller) After(ctx  *appcontext.AppContext,form interface{}) bool {
+  log.Debug("After Function Start")
+  return true
+}
+
+func (con *Controller) Get(ctx  *appcontext.AppContext,form interface{}) {
 
 }
 
-func (con *Controller) After(ctx  *appcontext.AppContext) {
+func (con *Controller) Post(ctx  *appcontext.AppContext,form interface{}) {
 
 }
 
-func (con *Controller) Get(ctx  *appcontext.AppContext) {
+func (con *Controller) Delete(ctx  *appcontext.AppContext,form interface{}) {
 
 }
 
-func (con *Controller) Post(ctx  *appcontext.AppContext) {
+func (con *Controller) Put(ctx   *appcontext.AppContext,form interface{}) {
 
 }
 
-func (con *Controller) Delete(ctx  *appcontext.AppContext) {
-
-}
-
-func (con *Controller) Put(ctx   *appcontext.AppContext) {
-
-}
-
-func (con *Controller) Head(ctx   *appcontext.AppContext) {
+func (con *Controller) Head(ctx   *appcontext.AppContext,form interface{}) {
 
 }
 

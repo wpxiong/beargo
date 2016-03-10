@@ -11,6 +11,7 @@ import (
   "github.com/wpxiong/beargo/filter"
   "github.com/wpxiong/beargo/render"
   "github.com/wpxiong/beargo/constvalue"
+  "github.com/wpxiong/beargo/memorycash"
   "strconv"
   "time"
   "os"
@@ -60,6 +61,7 @@ func New(appContext *appcontext.AppContext, funcMap map[string]filter.FilterFunc
       InitDefaultConvertFunction(appContext)
       filter.InitFilter()
       filter.AddInitFilter(appContext,funcMap)
+      memorycash.CreateMemoryCashManager(appContext)
       pwd, _ := os.Getwd()
       webApp.resourceUrlPath = appContext.GetConfigValue(constvalue.RESOURCE_PATH_KEY,constvalue.DEFAULT_RESOURCE_PATH).(string)
       render.SetDefaultTemplateDir(pwd)
@@ -126,6 +128,21 @@ func startProcess(web *WebApplication){
         log.ErrorArray("Error",err)
         web.control <- 1
     }
+}
+
+func (web *WebApplication) AddAutoRoute(urlPattern string,controller controller.ControllerMethod,form interface{}) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.AddAuto(urlPattern,controller,formType)
+}
+
+func (web *WebApplication) AddAutoRouteWithViewPath(urlPattern string,controller controller.ControllerMethod,form interface{},viewPath string) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.AddAutoWithViewPath(urlPattern,controller,formType,viewPath)
+}
+
+func (web *WebApplication) AddRouteWithViewPath(urlPattern string,controller controller.ControllerMethod,method string,form interface{},viewPath string) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.AddWithViewPath(urlPattern,controller,method,formType,viewPath)
 }
 
 func (web *WebApplication) AddRoute(urlPattern string,controller controller.ControllerMethod,method string,form interface{}) {

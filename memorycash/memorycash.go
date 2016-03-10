@@ -2,7 +2,10 @@ package memorycash
 
 import (
   "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/constvalue"
+  "github.com/wpxiong/beargo/appcontext"
   "errors"
+  "strconv"
 )
 
 func init() {
@@ -11,9 +14,6 @@ func init() {
 
 var memorycashManager *MemoryCashManager 
 
-const (
-  DEFAULT_CASH_SIZE = 1000
-)
 
 type MemoryCash interface {
    AddStringObject(key string, val string) error
@@ -21,7 +21,7 @@ type MemoryCash interface {
    GetObject(key string) (interface{},error)
    AddObject(key string, val interface{}) error
    DeleteObject(key string) error
-   InitMemoryCash(size int) error
+   InitMemoryCash(size int64) error
 }
 
 
@@ -29,10 +29,20 @@ type MemoryCashManager struct {
    memoryCash MemoryCash
 }
 
-func CreateMemoryCashManager(memorycashType string){
+func CreateMemoryCashManager(context *appcontext.AppContext) {
   if memorycashManager == nil {
+     var memorycashType string
+     memorycashType = context.GetConfigValue(constvalue.CASH_TYPE_KEY,constvalue.DEFAULT_CASH_TYPE).(string)
+     maxcashsize := context.GetConfigValue(constvalue.CASH_MAXSIZE_KEY,"").(string)
+     var maxsize int64 = constvalue.DEFAULT_CASH_MAXSIZE
+     if maxcashsize != ""{
+        size,err :=  strconv.Atoi(maxcashsize)
+        if err != nil {
+           maxsize = int64(size)
+        }
+     }
      memorycashManager = &MemoryCashManager{}
-     initMemoryCashManager(memorycashType)
+     initMemoryCashManager(memorycashType,context,maxsize)
   }
 }
 
@@ -77,11 +87,11 @@ func DeleteObject(key string) error {
    }
 }
 
-func initMemoryCashManager(memorycashType string){
+func initMemoryCashManager(memorycashType string,context *appcontext.AppContext,cashSize int64){
    switch memorycashType {
       case "mapmemorycash":
         memorycashManager.memoryCash = &MapMemoryCash{}
-        if err := memorycashManager.memoryCash.InitMemoryCash(DEFAULT_CASH_SIZE);err != nil {
+        if err := memorycashManager.memoryCash.InitMemoryCash(cashSize);err != nil {
             memorycashManager.memoryCash = nil
             log.Error(err)
         }

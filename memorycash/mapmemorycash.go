@@ -13,8 +13,8 @@ func init() {
 
 type MapMemoryCash struct {
    valueMap  map[string]interface{}
-   count     int
-   maxcount  int
+   count     int64
+   maxcount  int64
 }
 
 
@@ -67,7 +67,7 @@ func (this *MapMemoryCash) DeleteObject(key string) error {
   return nil
 }
 
-func (this *MapMemoryCash) InitMemoryCash(size int) error {
+func (this *MapMemoryCash) InitMemoryCash(size int64) error {
   this.valueMap = make(map[string]interface{},size)
   this.maxcount = size 
   this.count = 0

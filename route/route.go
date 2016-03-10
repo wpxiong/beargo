@@ -9,6 +9,7 @@ import (
   "github.com/wpxiong/beargo/webhttp"
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/filter"
+  "github.com/wpxiong/beargo/constvalue"
 )
 
 func init() {
@@ -128,7 +129,20 @@ func (rtp *RouteInfo ) CallMethod() {
             res = filter.ProcessAfterFilter(appContext)
         }
     }()
+    
+    beforeFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.BEFORE_FUNC)
+    afterFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.AFTER_FUNC)
+    var result []reflect.Value = beforeFunc.Call(v)
+    if (result[0].Interface()).(bool) == false {
+      return 
+    }
+    
     funcmap.Call(v)
+    result = afterFunc.Call(v)
+    if (result[0].Interface()).(bool) == false {
+      return 
+    }
+    
     res = filter.ProcessAfterFilter(appContext)
     if !res {
        return 
@@ -285,7 +299,7 @@ func (node *TreeNode ) debugInfo() {
        k++
     }
     log.DebugNoReturn("]")
-    log.Debug("}")
+    log.DebugNoReturn("}\n")
 }
 
 func (routeInfo *RouteInfo ) DebugInfo() {
@@ -299,7 +313,7 @@ func (routeInfo *RouteInfo ) DebugInfo() {
       }
    }
    log.DebugNoReturn("],methodName:" + routeInfo.methodName)
-   log.Debug("}")
+   log.DebugNoReturn("}\n")
 }
 
 func (rtp *RouteProcess ) DebugInfo() {
@@ -340,12 +354,71 @@ func (rtp *RouteProcess ) checkMethod (controller controller.ControllerMethod,me
 }
 
 
+func (rtp *RouteProcess ) getMethodInfo (controller controller.ControllerMethod,method string) (*reflect.Value,*reflect.Method) {
+   controllerType := reflect.TypeOf(controller)
+   var methodfu reflect.Value = reflect.ValueOf(controller).MethodByName(method)
+   methodstr,res := controllerType.MethodByName(method)
+   if  res  && methodstr.Type.NumIn() == 3  {
+     return &methodfu,&methodstr
+   }
+   return nil,nil
+}
+
+
+/**
+ * <name:int>
+ *
+**/
+func (rtp *RouteProcess ) AddAuto(pathPattern string,controller controller.ControllerMethod,formType reflect.Type) {
+   rtp.addRoute(pathPattern,controller,constvalue.DEFAULT_FUNC_NAME,formType,nil,true)
+   var pathernStr = pathPattern
+   if pathPattern[len(pathPattern)-1] == '/' {
+      pathernStr = pathPattern[:len(pathPattern)-1]
+   }
+   controllerType := reflect.TypeOf(controller)
+   for i := 0; i < controllerType.NumMethod(); i++ {
+      methodstr := controllerType.Method(i)
+      methodName := methodstr.Name
+      if methodName != constvalue.BEFORE_FUNC &&  methodName != constvalue.AFTER_FUNC {
+         rtp.addRoute(pathernStr + "/"+ strings.ToLower(methodName),controller,methodName,formType,nil,true)
+      }
+   }
+}
+
+/**
+ * <name:int>
+ *
+**/
+func (rtp *RouteProcess ) AddAutoWithViewPath(pathPattern string,controller controller.ControllerMethod,formType reflect.Type,viewPath string) {
+   rtp.addRoute(pathPattern,controller,constvalue.DEFAULT_FUNC_NAME,formType,&viewPath,true)
+   var pathernStr = pathPattern
+   if pathPattern[len(pathPattern)-1] == '/' {
+      pathernStr = pathPattern[:len(pathPattern)-1]
+   }
+   controllerType := reflect.TypeOf(controller)
+   for i := 0; i < controllerType.NumMethod(); i++ {
+      methodstr := controllerType.Method(i)
+      methodName := methodstr.Name
+      if methodName != constvalue.BEFORE_FUNC &&  methodName != constvalue.AFTER_FUNC {
+         rtp.addRoute(pathernStr + "/"+ strings.ToLower(methodName),controller,methodName,formType,&viewPath,true)
+      }
+   }
+}
 
 /**
  * <name:int>
  *
 **/
 func (rtp *RouteProcess ) Add(pathPattern string,controller controller.ControllerMethod,method string,formType reflect.Type) {
+   rtp.addRoute(pathPattern,controller,method,formType,nil,false)
+}
+
+func (rtp *RouteProcess ) AddWithViewPath(pathPattern string,controller controller.ControllerMethod,method string,formType reflect.Type,viewPath string) {
+   rtp.addRoute(pathPattern,controller,method,formType,&viewPath,false)
+}
+
+
+func (rtp *RouteProcess ) addRoute(pathPattern string,controller controller.ControllerMethod,method string,formType reflect.Type,viewPath *string,auto bool) {
    pathPattern = strings.Trim(pathPattern," ")
    if len(pathPattern) == 0 {
       return
@@ -355,7 +428,7 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
    var urlPathIndex int = len(componentArray)
    var firstParameter bool = false
    for k, com := range componentArray {
-     if len(com) == 0 {
+     if  (k < urlPathIndex -1) && (len(com) == 0) {
         continue
      }else{
         hasReg := false
@@ -370,9 +443,6 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
         var nodename  string = ""
         var reg string
         var regstr *regexp.Regexp
-        if len(com) == 0 {
-          continue
-        }
         for _,ch := range com {
            if ch == '<' {
               if !firstParameter {
@@ -422,13 +492,21 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
            treeNode.isLeafNode = true
            treeNode.controller = controller
            treeNode.formType = formType
-           treeNode.UrlPath = strings.Join(componentArray[:urlPathIndex],"/")
+           if viewPath == nil {
+              treeNode.UrlPath = strings.Join(componentArray[:urlPathIndex],"/")
+           }else {
+              treeNode.UrlPath = *viewPath
+           }
            if strings.Trim(treeNode.UrlPath," ") == ""{
               treeNode.UrlPath = DEFAULT_URL
            }
            var methodInfo *reflect.Method
            var meth *reflect.Value
-           meth,methodInfo = rtp.checkMethod(controller,method)
+           if !auto {
+             meth,methodInfo = rtp.checkMethod(controller,method)
+           }else {
+             meth,methodInfo = rtp.getMethodInfo(controller,method)
+           }
            if meth != nil {
                treeNode.funcmap  = *meth
                treeNode.methodInfo  = *methodInfo
@@ -457,15 +535,6 @@ func (rtp *RouteProcess ) Add(pathPattern string,controller controller.Controlle
       }
    }
 }
-
-/**
- * <name:int>
- *
-**/
-func (rtp *RouteProcess ) AddAuto(controller controller.ControllerMethod,formType reflect.Type) {
-   
-}
-
 
 
 func (this *RouteInfo) getRequestInfo() string {
