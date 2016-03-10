@@ -144,7 +144,7 @@ func (ctx *AppContext) InitAppContext(ConfigPath string , Port int) {
    ctx.ConfigContext.ConfigParam = make(map[string](interface{}))
    if ctx.ConfigContext.ConfigPath != ""{
       ctx.ConfigContext.LoadConfig()
-      log.Debug(ctx.ConfigContext.ConfigParam)
+      log.Info(ctx.ConfigContext.ConfigParam)
    }
    
 }

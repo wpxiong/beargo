@@ -42,7 +42,6 @@ func (this *logInfo) printObject(level LogLevel,message interface{}) {
 
 func (this *logInfo) printArrayNoReturn(level LogLevel,message ... interface{} ) {
   if this.loglevel <= level {
-    fmt.Print(time.Now().Format(this.timeFormate) + " ")
     fmt.Print(message)
   }
 }
@@ -50,7 +49,6 @@ func (this *logInfo) printArrayNoReturn(level LogLevel,message ... interface{} )
 
 func (this *logInfo) printObjectReturn(level LogLevel,message interface{}) {
   if this.loglevel <= level {
-     fmt.Print(time.Now().Format(this.timeFormate) + " ")
      fmt.Print(message)
   }
 }

@@ -128,6 +128,21 @@ func startProcess(web *WebApplication){
     }
 }
 
+func (web *WebApplication) AddAutoRoute(urlPattern string,controller controller.ControllerMethod,form interface{}) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.AddAuto(urlPattern,controller,formType)
+}
+
+func (web *WebApplication) AddAutoRouteWithViewPath(urlPattern string,controller controller.ControllerMethod,form interface{},viewPath string) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.AddAutoWithViewPath(urlPattern,controller,formType,viewPath)
+}
+
+func (web *WebApplication) AddRouteWithViewPath(urlPattern string,controller controller.ControllerMethod,method string,form interface{},viewPath string) {
+   var formType reflect.Type = reflect.TypeOf(form)
+   web.RouteProcess.AddWithViewPath(urlPattern,controller,method,formType,viewPath)
+}
+
 func (web *WebApplication) AddRoute(urlPattern string,controller controller.ControllerMethod,method string,form interface{}) {
    var formType reflect.Type = reflect.TypeOf(form)
    web.RouteProcess.Add(urlPattern,controller,method,formType)

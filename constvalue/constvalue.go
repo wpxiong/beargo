@@ -2,6 +2,12 @@ package constvalue
 
 
 const (
+
+  BEFORE_FUNC = "Before"
+  AFTER_FUNC = "After"
+  
+  DEFAULT_FUNC_NAME = "Index"
+  
   RESOURCE_PATH_KEY = "resource_url"
   REQUEST_TIMEOUT_KEY  = "request.timeout"
   RESPONSE_TIMEOUT_KEY  = "response.timeout"
@@ -13,6 +19,8 @@ const (
   DEFAULT_RESOURCE_PATH = "resource"
   DEFAULT_REQUEST_TIMEOUT = "300"
   DEFAULT_RESPONSE_TIMEOUT = "300"
+  
+  
 )
 
 var DEFULT_BEFORE_FILTER []string
