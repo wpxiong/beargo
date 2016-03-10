@@ -133,12 +133,14 @@ func (rtp *RouteInfo ) CallMethod() {
     beforeFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.BEFORE_FUNC)
     afterFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.AFTER_FUNC)
     var result []reflect.Value = beforeFunc.Call(v)
+
     if (result[0].Interface()).(bool) == false {
       return 
     }
     
     funcmap.Call(v)
     result = afterFunc.Call(v)
+
     if (result[0].Interface()).(bool) == false {
       return 
     }
