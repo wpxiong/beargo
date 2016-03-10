@@ -2,6 +2,7 @@ package render
 
 import (
   "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/render/template"
   "github.com/wpxiong/beargo/render/webtemplate"
   "github.com/wpxiong/beargo/memorycash"
   "github.com/wpxiong/beargo/process"
@@ -100,6 +101,7 @@ type RenderManager struct {
   layouttemplateList []*webtemplate.Template
   pagetemplateList map[string]*webtemplate.Template
   templateFilePath string
+  funcMap     *template.TemplateFuncMap
 }
 
 func SetDefaultTemplateDir(workDir string){
@@ -125,8 +127,9 @@ func getManager() *RenderManager {
    return rendermanager
 }
 
-func StartTemplateManager(){
-   getManager()
+func CreateSessionManager(app *appcontext.AppContext, funcmap template.TemplateFuncMap){
+   manager := getManager()
+   manager.funcMap = &funcmap
 }
 
 func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter,urlPath string) *RenderInfo {

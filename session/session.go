@@ -7,3 +7,7 @@ import (
 func init() {
   log.InitLog()
 }
+
+type Session struct {
+
+}

@@ -12,6 +12,10 @@ const (
   REQUEST_TIMEOUT_KEY  = "request.timeout"
   RESPONSE_TIMEOUT_KEY  = "response.timeout"
   RESOURCE_FOLDER = "./views/public/"
+  SESSION_TIMEOUT_KEY = "session_time_out"
+  SESSION_PROVIDER_KEY = "session_provider"
+  
+  SESSION_NAME = "GSESSION"
   
   BEFORE_FILTER_KEY  = "before_filter"
   AFTER_FILTER_KEY  = "after_filter"
@@ -21,11 +25,11 @@ const (
   DEFAULT_RESOURCE_PATH = "resource"
   DEFAULT_REQUEST_TIMEOUT = "300"
   DEFAULT_RESPONSE_TIMEOUT = "300"
-
+  
+  DEFAULT_SESSION_TIMEOUT = 3600 
   DEFAULT_CASH_MAXSIZE = 1000 
   DEFAULT_CASH_TYPE = "memory"
-
-  
+  DEFAULT_SESSION_PROVIDER = ""
 )
 
 var DEFULT_BEFORE_FILTER []string

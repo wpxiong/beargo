@@ -10,6 +10,8 @@ func init() {
 
 type templateType int
 
+type TemplateFuncMap map[string]interface{}
+
 const (
     HTML_TEMPLATE   templateType = iota
     JSON_TEMPLATE 

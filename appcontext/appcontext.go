@@ -40,23 +40,17 @@ type AppContext struct {
 
 func (ctx *AppContext) GetConfigValue(key string,defaultValue interface{}) interface{} {
    val := ctx.ConfigContext.ConfigParam[key]
+   if val == nil {
+      return defaultValue
+   }
    switch reflect.TypeOf(val).Kind() {
       case reflect.String:
-         if val == nil {
-           return defaultValue
-         }else {
-           return val
-         }
+         return val
       case reflect.Slice:
-         if val == nil {
-           return defaultValue
-         }else {
-           return val.([]string)
-         }
+        return val.([]string)
       default:
          return val
    }
-  
 }
 
 

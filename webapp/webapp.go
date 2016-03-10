@@ -12,6 +12,9 @@ import (
   "github.com/wpxiong/beargo/render"
   "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/memorycash"
+  "github.com/wpxiong/beargo/render/template"
+  "github.com/wpxiong/beargo/session"
+  "github.com/wpxiong/beargo/session/provider"
   "strconv"
   "time"
   "os"
@@ -43,6 +46,11 @@ type  WebApplication struct {
    resourceUrlPath  string
 }
 
+type ConfigMap struct {
+  Filterfuncmap    map[string]filter.FilterFunc
+  Sessionprovidermap  map[string]session.SessionProvider 
+  Templatefuncmap  template.TemplateFuncMap
+}
 
 
 var webApp *WebApplication
@@ -55,16 +63,79 @@ func InitDefaultConvertFunction(appContext *appcontext.AppContext){
   appContext.AddConvertFunctiont("Bool",util.StringToBool)
 }
 
-func New(appContext *appcontext.AppContext, funcMap map[string]filter.FilterFunc) *WebApplication {
+func MergeMapFilterFuncMap(dest  map[string]filter.FilterFunc, src  map[string]filter.FilterFunc) {
+  for key,val := range src {
+     if dest[key] == nil {
+        dest[key] = val
+     }
+  }
+}
+
+
+func MergeMapSessionProviderMap(dest  map[string]session.SessionProvider , src  map[string]session.SessionProvider ) {
+  for key,val := range src {
+     if dest[key] == nil {
+        dest[key] = val
+     }
+  }
+}
+
+func MergeMapTemplateFuncMap(dest  template.TemplateFuncMap , src template.TemplateFuncMap ) {
+  for key,val := range src {
+     if dest[key] == nil {
+        dest[key] = val
+     }
+  }
+}
+
+func initDefaultSessionProviderMap() map[string]session.SessionProvider {
+  sessionProviderMap := make(map[string]session.SessionProvider)
+  sessionProviderMap["MemorySessionProvider"] = &provider.MemorySessionProvider{}
+  return sessionProviderMap
+}
+
+
+func initDefaultTemplateFuncMap() template.TemplateFuncMap {
+  funcMap := make(template.TemplateFuncMap)
+  return funcMap
+}
+
+
+func initDefaultFilterFuncMap() map[string]filter.FilterFunc {
+  funcMap := make(map[string]filter.FilterFunc)
+  funcMap["ParameterParseFilter"] = filter.ParameterParseFilter
+  funcMap["ParameterBinderFilter"] =  filter.ParameterBinderFilter
+  funcMap["RenderBindFilter"] =  filter.RenderBindFilter
+  funcMap["RenderOutPutFilter"] =  filter.RenderOutPutFilter
+  return funcMap
+}
+
+func New(appContext *appcontext.AppContext, configMap ConfigMap) *WebApplication {
    if webApp == nil {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
       InitDefaultConvertFunction(appContext)
       filter.InitFilter()
-      filter.AddInitFilter(appContext,funcMap)
+      
       memorycash.CreateMemoryCashManager(appContext)
+          
+      //filterFuncMap
+      default_funcmap := initDefaultFilterFuncMap()
+      MergeMapFilterFuncMap(default_funcmap,configMap.Filterfuncmap)
+      filter.AddInitFilter(appContext,default_funcmap)
+      
+      //SessionProviderMap
+      default_session_provider := initDefaultSessionProviderMap()
+      MergeMapSessionProviderMap(default_session_provider,configMap.Sessionprovidermap)
+      session.CreateSessionManager(appContext,default_session_provider)
+      
       pwd, _ := os.Getwd()
       webApp.resourceUrlPath = appContext.GetConfigValue(constvalue.RESOURCE_PATH_KEY,constvalue.DEFAULT_RESOURCE_PATH).(string)
       render.SetDefaultTemplateDir(pwd)
+      
+      //Templatefuncmap
+      default_template_func := initDefaultTemplateFuncMap()
+      MergeMapTemplateFuncMap(default_template_func,configMap.Templatefuncmap)
+      render.CreateSessionManager(appContext,default_template_func)
    }
    return webApp;
 }
@@ -165,7 +236,6 @@ func (web *WebApplication) SetTemplateWorkDictionary(folerpath string){
 
 func (web *WebApplication) Start() {
     go startProcess(web)
-    render.StartTemplateManager()
     if err := render.CompileTemplate();err != nil {
        log.Error(err)
        return
