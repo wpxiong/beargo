@@ -90,7 +90,7 @@ func MergeMapTemplateFuncMap(dest  template.TemplateFuncMap , src template.Templ
 
 func initDefaultSessionProviderMap() map[string]session.SessionProvider {
   sessionProviderMap := make(map[string]session.SessionProvider)
-  sessionProviderMap["MemorySessionProvider"] = &provider.MemorySessionProvider{}
+  sessionProviderMap[constvalue.DEFAULT_SESSION_PROVIDER] = &provider.MemorySessionProvider{}
   return sessionProviderMap
 }
 
@@ -103,10 +103,10 @@ func initDefaultTemplateFuncMap() template.TemplateFuncMap {
 
 func initDefaultFilterFuncMap() map[string]filter.FilterFunc {
   funcMap := make(map[string]filter.FilterFunc)
-  funcMap["ParameterParseFilter"] = filter.ParameterParseFilter
-  funcMap["ParameterBinderFilter"] =  filter.ParameterBinderFilter
-  funcMap["RenderBindFilter"] =  filter.RenderBindFilter
-  funcMap["RenderOutPutFilter"] =  filter.RenderOutPutFilter
+  funcMap[constvalue.ParameterParseFilter] = filter.ParameterParseFilter
+  funcMap[constvalue.ParameterBinderFilter] =  filter.ParameterBinderFilter
+  funcMap[constvalue.RenderBindFilter] =  filter.RenderBindFilter
+  funcMap[constvalue.RenderOutPutFilter] =  filter.RenderOutPutFilter
   return funcMap
 }
 

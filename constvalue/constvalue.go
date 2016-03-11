@@ -29,7 +29,17 @@ const (
   DEFAULT_SESSION_TIMEOUT = 3600 
   DEFAULT_CASH_MAXSIZE = 1000 
   DEFAULT_CASH_TYPE = "memory"
-  DEFAULT_SESSION_PROVIDER = ""
+  DEFAULT_SESSION_PROVIDER = "MemorySessionProvider"
+  
+  
+  //Filter Name
+  ParameterParseFilter = "ParameterParseFilter"
+  ParameterBinderFilter = "ParameterBinderFilter"
+  RenderBindFilter = "RenderBindFilter"
+  RenderOutPutFilter = "RenderOutPutFilter"
+  
+  MemorySessionProvider = "MemorySessionProvider"
+  
 )
 
 var DEFULT_BEFORE_FILTER []string

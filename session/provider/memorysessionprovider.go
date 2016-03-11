@@ -18,14 +18,31 @@ func (provider *MemorySessionProvider) CreateSession(sessionId string) (session.
    return session.Session{},nil
 }
 
-func (provider *MemorySessionProvider)  LoadSession(sessionId string) (session.Session, error) {
-   return session.Session{},nil
-}
 
 func (provider *MemorySessionProvider)  DeleteSession(sessionId string) error {
    return nil
 }
 
-func (provider *MemorySessionProvider)  RemoveAllSession(timeout int64)  error {
+func (provider *MemorySessionProvider)  RemoveAllSession(sessionIdList []string) error {
   return nil
+}
+
+func (provider *MemorySessionProvider)  FindSessionById(sessionId string) bool {
+   return true
+}
+
+func (provider *MemorySessionProvider)  StoreSessionById(sessionId string) error {
+   return nil
+}
+
+func (provider *MemorySessionProvider)  StoreSession(sessionId []string)  error{
+   return nil
+}
+
+func (provider *MemorySessionProvider)  LoadSessionById(sessionId string) (session.Session,error){
+   return session.Session{},nil
+}
+
+func (provider *MemorySessionProvider)  LoadSession(sessionId []string) (map[string]session.Session ,error) {
+   return make(map[string]session.Session),nil
 }
