@@ -21,14 +21,26 @@ type Session struct {
 }
 
 
-func (session *SessionInfo) UpdateSession(timeOut int){
-  session.sessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
+func (this *Session) InitSession(id string){
+  this.sessionId = id
+  this.sessionValue = make(map[string] interface{})
 }
 
-func (session *SessionInfo) InitSession(timeOut int) {
-  session.sessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
-  session.isInMemory = true
+func (this *SessionInfo) UpdateSession(timeOut int){
+  this.sessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
 }
 
+func (this *SessionInfo) InitSession(timeOut int) {
+  this.sessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
+  this.isInMemory = true
+}
 
+func (this *Session) SaveSessionValue(valueId string, obj interface{}){
+  log.Debug(this.sessionValue)
+  this.sessionValue[valueId] = obj
+}
+
+func (this *Session) GetSessionValue(valueId string)  interface{} {
+  return this.sessionValue[valueId] 
+}
 

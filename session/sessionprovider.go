@@ -10,14 +10,11 @@ func init() {
 
 
 type SessionProvider interface {
+   InitProvider()
    CreateSession(sessionId string) (Session, error)
    DeleteSession(sessionId string) error
-   RemoveAllSession(sessionIdList []string) error
    FindSessionById(sessionId string) bool
-   StoreSessionById(sessionId string)  error
-   StoreSession(sessionId []string)  error
    LoadSessionById(sessionId string) (Session ,error)
-   LoadSession(sessionId []string)  (map[string]Session ,error)
 }
 
 

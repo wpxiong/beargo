@@ -30,7 +30,7 @@ const (
   DEFAULT_CASH_MAXSIZE = 1000 
   DEFAULT_CASH_TYPE = "memory"
   DEFAULT_SESSION_PROVIDER = "MemorySessionProvider"
-  
+  DEFAULT_SESSIONID_SIZE = 32
   
   //Filter Name
   ParameterParseFilter = "ParameterParseFilter"
