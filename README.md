@@ -3,7 +3,7 @@ beargo is a simple  web framework which is writted by golang
 
 Beargo provides dynamic routing, parameter parsing, and parameter auto binding
 
-templating and process filter function.
+templating and process interceptor function.
 
 the version1.0 will be completed on 2016/5.
 

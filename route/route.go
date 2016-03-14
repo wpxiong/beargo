@@ -8,7 +8,7 @@ import (
   "github.com/wpxiong/beargo/appcontext"
   "github.com/wpxiong/beargo/webhttp"
   "github.com/wpxiong/beargo/log"
-  "github.com/wpxiong/beargo/filter"
+  "github.com/wpxiong/beargo/interceptor"
   "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/render"
 )
@@ -121,7 +121,7 @@ func (rtp *RouteInfo ) ResourceClean(appContext *appcontext.AppContext) {
 
 func (rtp *RouteInfo ) CallRedirectMethod(appContext *appcontext.AppContext){
     var funcmap reflect.Value = rtp.getFuncmap()
-    res := filter.ProcessRedirectBeforeFilter(appContext)
+    res := interceptor.ProcessRedirectBeforeinterceptor(appContext)
     if !res {
        return 
     }
@@ -131,7 +131,7 @@ func (rtp *RouteInfo ) CallRedirectMethod(appContext *appcontext.AppContext){
     defer func() {
         if err := recover(); err != nil {
             log.Error("Call Controller Method Error")
-            res = filter.ProcessAfterFilter(appContext)
+            res = interceptor.ProcessAfterinterceptor(appContext)
         }
     }()
     
@@ -148,7 +148,7 @@ func (rtp *RouteInfo ) CallRedirectMethod(appContext *appcontext.AppContext){
     if (result[0].Interface()).(bool) == false {
       return 
     }
-    res = filter.ProcessAfterFilter(appContext)
+    res = interceptor.ProcessAfterinterceptor(appContext)
     if !res {
        return 
     }
@@ -160,7 +160,7 @@ func (rtp *RouteInfo ) CallMethod() {
     var appContext *appcontext.AppContext = &appcontext.AppContext{ControllerMethodInfo :rtp.methodInfo,FormType:rtp.formType}
     appContext.CopyAppContext(routeProcess.ctx)
     rtp.InitAppContext(appContext)
-    res := filter.ProcessBeforeFilter(appContext)
+    res := interceptor.ProcessBeforeinterceptor(appContext)
     defer rtp.ResourceClean(appContext)
     if !res {
        return 
@@ -191,7 +191,7 @@ func (rtp *RouteInfo ) CallMethod() {
       return 
     }
     
-    res = filter.ProcessAfterFilter(appContext)
+    res = interceptor.ProcessAfterinterceptor(appContext)
     if !res {
        return 
     }
@@ -620,7 +620,7 @@ func redireToErrorPage(app *appcontext.AppContext, urlpath string, ErrorData int
    renderInfo.InitRenderInfo(app)
    renderInfo.OutPutData = ErrorData
    app.Renderinfo = renderInfo
-   res := filter.RenderOutPutFilter(app)
+   res := interceptor.RenderOutPutinterceptor(app)
    if !res {
      log.Error("Can not Render Errer Page")
    }

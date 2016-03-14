@@ -8,14 +8,14 @@ import (
   "github.com/wpxiong/beargo/webhttp"
   "github.com/wpxiong/beargo/controller"
   "github.com/wpxiong/beargo/util"
-  "github.com/wpxiong/beargo/filter"
+  "github.com/wpxiong/beargo/interceptor"
   "github.com/wpxiong/beargo/render"
   "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/memorycash"
   "github.com/wpxiong/beargo/render/template"
   "github.com/wpxiong/beargo/session"
   "github.com/wpxiong/beargo/session/provider"
-  "github.com/wpxiong/beargo/filter/redirectfilter"
+  "github.com/wpxiong/beargo/interceptor/redirectinterceptor"
   "strconv"
   "time"
   "os"
@@ -31,11 +31,11 @@ func init() {
   log.InitLog()
 }
 
-type FilterType int 
+type interceptorType int 
 
 const (
-    BeforeFilter   FilterType = iota
-    AfterFilter 
+    Beforeinterceptor   interceptorType = iota
+    Afterinterceptor 
 )
 
 type  WebApplication struct {
@@ -48,7 +48,7 @@ type  WebApplication struct {
 }
 
 type ConfigMap struct {
-  Filterfuncmap    map[string]filter.FilterFunc
+  InterceptoFuncmap    map[string]interceptor.InterceptorFunc
   Sessionprovidermap  map[string]session.SessionProvider 
   Templatefuncmap  template.TemplateFuncMap
 }
@@ -64,7 +64,7 @@ func InitDefaultConvertFunction(appContext *appcontext.AppContext){
   appContext.AddConvertFunctiont("Bool",util.StringToBool)
 }
 
-func MergeMapFilterFuncMap(dest  map[string]filter.FilterFunc, src  map[string]filter.FilterFunc) {
+func MergeMapInterceptorFuncMap(dest  map[string]interceptor.InterceptorFunc, src  map[string]interceptor.InterceptorFunc) {
   for key,val := range src {
      if dest[key] == nil {
         dest[key] = val
@@ -102,13 +102,13 @@ func initDefaultTemplateFuncMap() template.TemplateFuncMap {
 }
 
 
-func initDefaultFilterFuncMap() map[string]filter.FilterFunc {
-  funcMap := make(map[string]filter.FilterFunc)
-  funcMap[constvalue.ParameterParseFilter] = filter.ParameterParseFilter
-  funcMap[constvalue.ParameterBinderFilter] =  filter.ParameterBinderFilter
-  funcMap[constvalue.RenderBindFilter] =  filter.RenderBindFilter
-  funcMap[constvalue.RenderOutPutFilter] =  filter.RenderOutPutFilter
-  funcMap[constvalue.RedirectFilter] =  redirectfilter.RedirectFilter
+func initDefaultInterceptorFuncMap() map[string]interceptor.InterceptorFunc {
+  funcMap := make(map[string]interceptor.InterceptorFunc)
+  funcMap[constvalue.ParameterParseinterceptor] = interceptor.ParameterParseinterceptor
+  funcMap[constvalue.ParameterBinderinterceptor] =  interceptor.ParameterBinderinterceptor
+  funcMap[constvalue.RenderBindinterceptor] =  interceptor.RenderBindinterceptor
+  funcMap[constvalue.RenderOutPutinterceptor] =  interceptor.RenderOutPutinterceptor
+  funcMap[constvalue.Redirectinterceptor] =  redirectinterceptor.Redirectinterceptor
   return funcMap
 }
 
@@ -116,14 +116,14 @@ func New(appContext *appcontext.AppContext, configMap ConfigMap) *WebApplication
    if webApp == nil {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
       InitDefaultConvertFunction(appContext)
-      filter.InitFilter()
+      interceptor.Initinterceptor()
       
       memorycash.CreateMemoryCashManager(appContext)
           
-      //filterFuncMap
-      default_funcmap := initDefaultFilterFuncMap()
-      MergeMapFilterFuncMap(default_funcmap,configMap.Filterfuncmap)
-      filter.AddInitFilter(appContext,default_funcmap)
+      //InterceptorFuncMap
+      default_funcmap := initDefaultInterceptorFuncMap()
+      MergeMapInterceptorFuncMap(default_funcmap,configMap.InterceptoFuncmap)
+      interceptor.AddInitinterceptor(appContext,default_funcmap)
       
       //SessionProviderMap
       default_session_provider := initDefaultSessionProviderMap()
@@ -226,12 +226,12 @@ func (web *WebApplication) AddRoute(urlPattern string,controller controller.Cont
    web.RouteProcess.Add(urlPattern,controller,method,formType)
 }
 
-func (web *WebApplication) AddFilter(filterfunc filter.FilterFunc,filterType FilterType) {
-   switch filterType {
-     case BeforeFilter:
-        filter.AddBeforeFilter(filterfunc)
-     case AfterFilter:
-        filter.AddAfterFilter(filterfunc)
+func (web *WebApplication) Addinterceptor(interceptorfunc interceptor.InterceptorFunc,interceptorType interceptorType) {
+   switch interceptorType {
+     case Beforeinterceptor:
+        interceptor.AddBeforeinterceptor(interceptorfunc)
+     case Afterinterceptor:
+        interceptor.AddAfterinterceptor(interceptorfunc)
    }
 }
 

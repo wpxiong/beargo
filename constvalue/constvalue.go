@@ -21,8 +21,8 @@ const (
   
   SESSION_NAME = "GSESSION"
   
-  BEFORE_FILTER_KEY  = "before_filter"
-  AFTER_FILTER_KEY  = "after_filter"
+  BEFORE_interceptor_KEY  = "before_interceptor"
+  AFTER_interceptor_KEY  = "after_interceptor"
   CASH_TYPE_KEY = "cash_type"
   CASH_MAXSIZE_KEY ="cash_max_size"
   
@@ -36,12 +36,12 @@ const (
   DEFAULT_SESSION_PROVIDER = "MemorySessionProvider"
   DEFAULT_SESSIONID_SIZE = 32
   
-  //Filter Name
-  ParameterParseFilter = "ParameterParseFilter"
-  ParameterBinderFilter = "ParameterBinderFilter"
-  RenderBindFilter = "RenderBindFilter"
-  RenderOutPutFilter = "RenderOutPutFilter"
-  RedirectFilter = "RedirectFilter"
+  //interceptor Name
+  ParameterParseinterceptor = "ParameterParseinterceptor"
+  ParameterBinderinterceptor = "ParameterBinderinterceptor"
+  RenderBindinterceptor = "RenderBindinterceptor"
+  RenderOutPutinterceptor = "RenderOutPutinterceptor"
+  Redirectinterceptor = "Redirectinterceptor"
   
   MemorySessionProvider = "MemorySessionProvider"
   
@@ -66,12 +66,12 @@ var  DEFAULT_ERROR_405_PATH = "error/405"
 var  DEFAULT_ERROR_500_PATH = "error/500"
   
 
-var DEFULT_BEFORE_FILTER []string
-var DEFULT_AFTER_FILTER []string
+var DEFULT_BEFORE_interceptor []string
+var DEFULT_AFTER_interceptor []string
 
 func init(){
-  DEFULT_BEFORE_FILTER = []string{"ParameterParseFilter","ParameterBinderFilter"}
-  DEFULT_AFTER_FILTER = []string {"RedirectFilter","RenderBindFilter","RenderOutPutFilter"}
+  DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor"}
+  DEFULT_AFTER_interceptor = []string {"Redirectinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
   
   DEFAULT_ERROR_403_PATH = strings.Replace(DEFAULT_ERROR_403_PATH, "/", string(os.PathSeparator), -1)
   DEFAULT_ERROR_404_PATH = strings.Replace(DEFAULT_ERROR_404_PATH, "/", string(os.PathSeparator), -1)
