@@ -1,5 +1,9 @@
 package constvalue
 
+import (
+  "strings"
+  "os"
+)
 
 const (
 
@@ -41,10 +45,26 @@ const (
   
   MemorySessionProvider = "MemorySessionProvider"
   
+  ERROR_403 = "/error_403"
+  ERROR_404 = "/error_404"
+  ERROR_405 = "/error_405"
+  ERROR_500 = "/error_500"
+  
+  ERROR_403_PATH_KEY = "403_error"
+  ERROR_404_PATH_KEY = "404_error"
+  ERROR_405_PATH_KEY = "405_error"
+  ERROR_500_PATH_KEY = "500_error"
+
   
   REDIRECT_ERROR = "REDIRECT_ERROR"
   
 )
+
+var  DEFAULT_ERROR_403_PATH = "error/403"
+var  DEFAULT_ERROR_404_PATH = "error/404"
+var  DEFAULT_ERROR_405_PATH = "error/405"
+var  DEFAULT_ERROR_500_PATH = "error/500"
+  
 
 var DEFULT_BEFORE_FILTER []string
 var DEFULT_AFTER_FILTER []string
@@ -52,5 +72,10 @@ var DEFULT_AFTER_FILTER []string
 func init(){
   DEFULT_BEFORE_FILTER = []string{"ParameterParseFilter","ParameterBinderFilter"}
   DEFULT_AFTER_FILTER = []string {"RedirectFilter","RenderBindFilter","RenderOutPutFilter"}
+  
+  DEFAULT_ERROR_403_PATH = strings.Replace(DEFAULT_ERROR_403_PATH, "/", string(os.PathSeparator), -1)
+  DEFAULT_ERROR_404_PATH = strings.Replace(DEFAULT_ERROR_404_PATH, "/", string(os.PathSeparator), -1)
+  DEFAULT_ERROR_405_PATH = strings.Replace(DEFAULT_ERROR_405_PATH, "/", string(os.PathSeparator), -1)
+  DEFAULT_ERROR_500_PATH = strings.Replace(DEFAULT_ERROR_500_PATH, "/", string(os.PathSeparator), -1)
 }
 

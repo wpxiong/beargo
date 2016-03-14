@@ -48,6 +48,7 @@ func (this *RenderInfo) InitRenderInfo(app *appcontext.AppContext) {
    if strings.HasPrefix(app.UrlPath,"/"){
      path = app.UrlPath[1:]
    }
+   log.Debug(getManager().pagetemplateList)
    this.TemplateList[app.UrlPath] =  getManager().pagetemplateList[path]
 }
 
@@ -147,7 +148,6 @@ func (this *RenderManager) redirectTo(app *appcontext.AppContext ,path string) {
    app.SetRedirect()
 }
 
-
 func (this *RenderManager) parseTemplateFile(templateFile *webtemplate.Template) {
    filePath := filepath.Join(this.templateFilePath,templateFile.FilePath)
    var ext string = filepath.Ext(filePath)
@@ -211,3 +211,6 @@ func CreateRenderInfo(app *appcontext.AppContext) *RenderInfo {
 func RedirectTo(app *appcontext.AppContext ,path string) {
    getManager().redirectTo(app,path)
 }
+
+
+

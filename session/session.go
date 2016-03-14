@@ -36,7 +36,6 @@ func (this *SessionInfo) InitSession(timeOut int) {
 }
 
 func (this *Session) SaveSessionValue(valueId string, obj interface{}){
-  log.Debug(this.sessionValue)
   this.sessionValue[valueId] = obj
 }
 

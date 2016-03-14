@@ -42,7 +42,7 @@ func ProcessBeforeFilter(context *appcontext.AppContext) bool {
 func ProcessRedirectBeforeFilter(context *appcontext.AppContext) bool {
    for _,filterF := range filterManager.BeforeFilter {
       switch reflect.TypeOf(filterF).Name() {
-        case constvalue.ParameterParseFilter,constvalue.ParameterBinderFilter :
+        case constvalue.ParameterParseFilter :
            continue
         default:
            
@@ -124,12 +124,3 @@ func (filter *Filter) AddAfterFilter (filterFunc FilterFunc){
 }
 
 
-func GetRedirectFilter() FilterFunc{
-   return redirectFilter
-}
-
-func redirectFilter(app *appcontext.AppContext) bool {
-  log.Debug("redirectFilter start")
-  return true
-  //return RedirectFilter(app)
-}

@@ -15,6 +15,7 @@ import (
   "github.com/wpxiong/beargo/render/template"
   "github.com/wpxiong/beargo/session"
   "github.com/wpxiong/beargo/session/provider"
+  "github.com/wpxiong/beargo/filter/redirectfilter"
   "strconv"
   "time"
   "os"
@@ -107,7 +108,7 @@ func initDefaultFilterFuncMap() map[string]filter.FilterFunc {
   funcMap[constvalue.ParameterBinderFilter] =  filter.ParameterBinderFilter
   funcMap[constvalue.RenderBindFilter] =  filter.RenderBindFilter
   funcMap[constvalue.RenderOutPutFilter] =  filter.RenderOutPutFilter
-  funcMap[constvalue.RedirectFilter] =  filter.GetRedirectFilter()
+  funcMap[constvalue.RedirectFilter] =  redirectfilter.RedirectFilter
   return funcMap
 }
 
@@ -170,6 +171,9 @@ func processRequest(w http.ResponseWriter, r *http.Request){
         
     }else {
        log.Error("Error: not found page")
+       appContext := InitRequestAndResponseAppContext(&request,&response)
+       route.RedirectTo404(appContext)
+      
     }
 }
 
@@ -247,4 +251,12 @@ func (web *WebApplication) Start() {
        process.StopWork(webApp.WorkProcess)
        log.Info("Stop WebApplication")
     }
+}
+
+
+func InitRequestAndResponseAppContext(request *webhttp.HttpRequest , response *webhttp.HttpResponse)  *appcontext.AppContext {
+  var appContext *appcontext.AppContext = &appcontext.AppContext{}
+  appContext.Request = request
+  appContext.Writer = response
+  return appContext
 }

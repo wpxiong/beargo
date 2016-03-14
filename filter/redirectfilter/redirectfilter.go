@@ -4,10 +4,9 @@ import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/appcontext"
   "github.com/wpxiong/beargo/util"
-  "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/util/httprequestutil"
+  "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/route"
-  "github.com/wpxiong/beargo/filter"
   "strings"
   "net/url"
 )
@@ -28,12 +27,13 @@ func RedirectFilter(app *appcontext.AppContext) bool {
      q := u.Query()
      httprequestutil.ParseGetParameter(app,q)
      app.ClearRedirect()
-     app.UrlPath = app.RedirectPath
-     urlArray := strings.Split(app.UrlPath,"?")
-     urlArray := strings.Split(app.UrlPath,"?")
-     rinfo := &RouteInfo{UrlParamInfo: []ParaInfo{}}
-     res := route.routeProcess.urlRoute(urlArray[0],rinfo)
+     urlArray := strings.Split(app.RedirectPath,"?")
+     rinfo := &route.RouteInfo{UrlParamInfo: []route.ParaInfo{}}
+     res := route.GetRouteProcess().UrlRoute(urlArray[0],rinfo)
      if res {
+        app.FormType = rinfo.GetFormType()
+        app.ControllerMethodInfo = rinfo.GetMethodInfo()
+        app.UrlPath = rinfo.UrlPath
         rinfo.CallRedirectMethod(app)
      }else {
         log.Error("Redirect URL Error: " + urlArray[0])

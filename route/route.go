@@ -10,6 +10,7 @@ import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/filter"
   "github.com/wpxiong/beargo/constvalue"
+  "github.com/wpxiong/beargo/render"
 )
 
 func init() {
@@ -90,6 +91,14 @@ func (rtp *RouteInfo ) getFuncmap() reflect.Value {
    return (*rtp.funcmap)
 }
 
+func (rtp *RouteInfo ) GetMethodInfo() *reflect.Method {
+   return rtp.methodInfo
+}
+
+func (rtp *RouteInfo ) GetFormType() reflect.Type {
+   return  rtp.formType
+}
+
 func (rtp *RouteInfo ) GetResult() bool {
    return rtp.result
 }
@@ -162,7 +171,8 @@ func (rtp *RouteInfo ) CallMethod() {
     defer func() {
         if err := recover(); err != nil {
             log.Error("Call Controller Method Error")
-            res = filter.ProcessAfterFilter(appContext)
+            //500 Error
+            RedirectTo500(appContext)
         }
     }()
     
@@ -255,7 +265,7 @@ func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[stri
 }
 
 
-func (rtp *RouteProcess ) urlRoute (request string, rtinfo *RouteInfo) bool{
+func (rtp *RouteProcess ) UrlRoute (request string, rtinfo *RouteInfo) bool{
    request = strings.Trim(request," ")
    if len(request) == 0 {
       return false
@@ -303,7 +313,7 @@ func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteIn
    if length > 0 {
       urlpath := urlArray[0]
       rinfo.requestUrl = urlpath
-      res := rtp.urlRoute(urlpath,rinfo)
+      res := rtp.UrlRoute(urlpath,rinfo)
       if res {
           rinfo.result = true
           rinfo.ResultChan = make(chan int)
@@ -587,4 +597,67 @@ func (this *RouteInfo) Init(requestUrl string,result bool,controller controller.
    this.result = result
    this.controller = controller
    this.Request = request
+}
+
+
+func GetRouteProcess() *RouteProcess {
+   return routeProcess
+}
+
+func redireToErrorPage(app *appcontext.AppContext, urlpath string, ErrorData interface{}) {
+   app.CopyAppContext(routeProcess.ctx)
+   switch urlpath {
+      case constvalue.ERROR_403:
+        app.UrlPath = app.GetConfigValue(constvalue.ERROR_403_PATH_KEY,constvalue.DEFAULT_ERROR_403_PATH).(string)
+      case constvalue.ERROR_404:
+        app.UrlPath = app.GetConfigValue(constvalue.ERROR_404_PATH_KEY,constvalue.DEFAULT_ERROR_404_PATH).(string)
+      case constvalue.ERROR_405:
+        app.UrlPath = app.GetConfigValue(constvalue.ERROR_405_PATH_KEY,constvalue.DEFAULT_ERROR_405_PATH).(string)
+      case constvalue.ERROR_500:
+        app.UrlPath = app.GetConfigValue(constvalue.ERROR_500_PATH_KEY,constvalue.DEFAULT_ERROR_500_PATH).(string)
+   }
+   var renderInfo *render.RenderInfo = render.CreateRenderInfo(app)
+   renderInfo.InitRenderInfo(app)
+   renderInfo.OutPutData = ErrorData
+   app.Renderinfo = renderInfo
+   res := filter.RenderOutPutFilter(app)
+   if !res {
+     log.Error("Can not Render Errer Page")
+   }
+}
+
+func RedirectTo403(app *appcontext.AppContext) {
+    redireToErrorPage(app,constvalue.ERROR_403,make(map[string]interface{}))
+}
+
+func RedirectTo404(app *appcontext.AppContext) {
+    redireToErrorPage(app,constvalue.ERROR_404,make(map[string]interface{}))
+}
+
+func RedirectTo405(app *appcontext.AppContext) {
+    redireToErrorPage(app,constvalue.ERROR_405,make(map[string]interface{}))
+}
+
+func RedirectTo500(app *appcontext.AppContext) {
+    redireToErrorPage(app,constvalue.ERROR_405,make(map[string]interface{}))
+}
+
+
+func RedirectTo500AndErrorData(app *appcontext.AppContext) {
+    redireToErrorPage(app,constvalue.ERROR_500,make(map[string]interface{}))
+}
+
+
+func RedirectTo403AndErrorData(app *appcontext.AppContext,ErrorData interface{}) {
+    redireToErrorPage(app,constvalue.ERROR_403,ErrorData)
+}
+
+
+func RedirectTo404AndErrorData(app *appcontext.AppContext,ErrorData interface{}) {
+    redireToErrorPage(app,constvalue.ERROR_404,ErrorData)
+}
+
+
+func RedirectTo405AndErrorData(app *appcontext.AppContext,ErrorData interface{}) {
+    redireToErrorPage(app,constvalue.ERROR_405,ErrorData)
 }
