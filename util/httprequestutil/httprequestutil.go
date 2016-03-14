@@ -102,3 +102,13 @@ func ConvertMapKeyToLower(mapInfo *interface{}){
     default:
    }
 }
+
+func ParseGetParameter(app *appcontext.AppContext, urlParam url.Values){
+    for key,value := range urlParam {
+       if len(value) == 1{
+           app.Parameter[strings.ToLower(key)] = value[0]
+       }else {
+           app.Parameter[strings.ToLower(key)] = value
+       }
+   }
+}

@@ -141,7 +141,13 @@ func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter,urlPath 
      return &RenderInfo{}
    }
 }
-    
+
+func (this *RenderManager) redirectTo(app *appcontext.AppContext ,path string) {
+   app.RedirectPath = path
+   app.SetRedirect()
+}
+
+
 func (this *RenderManager) parseTemplateFile(templateFile *webtemplate.Template) {
    filePath := filepath.Join(this.templateFilePath,templateFile.FilePath)
    var ext string = filepath.Ext(filePath)
@@ -199,4 +205,9 @@ func CompileTemplate() error {
 
 func CreateRenderInfo(app *appcontext.AppContext) *RenderInfo {
    return getManager().createRenderInfo(app.Writer.HttpResponseWriter,app.UrlPath)  
+}
+
+
+func RedirectTo(app *appcontext.AppContext ,path string) {
+   getManager().redirectTo(app,path)
 }

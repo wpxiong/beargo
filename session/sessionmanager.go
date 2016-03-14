@@ -67,12 +67,12 @@ func generateId() string {
 
 
 func (this *sessionManager ) getSession(sessionId string) Session {
-   this.sessionAccess.Lock()
-   defer this.sessionAccess.Unlock()
    var res bool = true
    var sess Session
    var err error
+   this.sessionAccess.Lock()
    res = this.Sessionprovider.FindSessionById(sessionId)
+   this.sessionAccess.Unlock()
    if !res {
      sess = this.createNewSession()
    }else {
@@ -101,6 +101,7 @@ func  NewSession(r *http.Request , w http.ResponseWriter)  Session{
   } else {
       sid, _ := url.QueryUnescape(cookie.Value)
       sess = sessionmanager.getSession(sid)
+      //update cookie
       if sess.sessionId != sid {
           cookie.Path = "/"
           cookie.MaxAge = int(sessionmanager.SessionLifeTime)
@@ -114,26 +115,25 @@ func  NewSession(r *http.Request , w http.ResponseWriter)  Session{
 
 
 func (this *sessionManager ) newSession() Session {
-   this.sessionAccess.Lock()
-   defer this.sessionAccess.Unlock()
    sess := this.createNewSession()
    return sess
 }
 
 func (this *sessionManager ) createNewSession() Session {
-   log.Debug("createNewSession Start")
    var sessionIdString string
    var res bool = true
+   this.sessionAccess.Lock()
    for res  {
      sessionIdString = generateId()
      res = this.Sessionprovider.FindSessionById(sessionIdString)
    }
    sess,err := this.Sessionprovider.CreateSession(sessionIdString)
+   this.sessionAccess.Unlock()
    if err != nil {
      log.Error("Create Session Error")
-     sess = sessionmanager.newSession()
+     panic("Create Session Error")
    }
    sessiontimeout := getInvalidateTime(this.SessionLifeTime)
-   this.sessionInfoMap[sessionIdString] = SessionInfo{sessionId:sessionIdString,isInMemory:true,sessionInvalidateTime:sessiontimeout}
+   this.sessionInfoMap[sess.sessionId] = SessionInfo{sessionId:sessionIdString,isInMemory:true,sessionInvalidateTime:sessiontimeout}
    return sess
 }

@@ -4,6 +4,7 @@ import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/appcontext"
   "github.com/wpxiong/beargo/constvalue"
+  "reflect"
 )
 
 func init() {
@@ -12,6 +13,7 @@ func init() {
 
 type FilterFunc func(*appcontext.AppContext)(bool)
 
+
 type  Filter  struct {
    AfterFilter  [] FilterFunc
    BeforeFilter [] FilterFunc
@@ -19,6 +21,7 @@ type  Filter  struct {
 
 var filterManager *Filter 
 
+var redirectfilter FilterFunc
 
 func InitFilter() {
   if filterManager == nil {
@@ -28,6 +31,22 @@ func InitFilter() {
 
 func ProcessBeforeFilter(context *appcontext.AppContext) bool {
    for _,filterF := range filterManager.BeforeFilter {
+      res := filterF(context)
+      if !res {
+         return false
+      }
+   }
+   return true
+}
+
+func ProcessRedirectBeforeFilter(context *appcontext.AppContext) bool {
+   for _,filterF := range filterManager.BeforeFilter {
+      switch reflect.TypeOf(filterF).Name() {
+        case constvalue.ParameterParseFilter,constvalue.ParameterBinderFilter :
+           continue
+        default:
+           
+      }
       res := filterF(context)
       if !res {
          return false
@@ -102,4 +121,15 @@ func (filter *Filter) AddBeforeFilter (filterFunc FilterFunc){
 
 func (filter *Filter) AddAfterFilter (filterFunc FilterFunc){
    filter.AfterFilter = append(filter.AfterFilter,filterFunc)
+}
+
+
+func GetRedirectFilter() FilterFunc{
+   return redirectFilter
+}
+
+func redirectFilter(app *appcontext.AppContext) bool {
+  log.Debug("redirectFilter start")
+  return true
+  //return RedirectFilter(app)
 }

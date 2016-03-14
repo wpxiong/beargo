@@ -35,8 +35,21 @@ type AppContext struct {
   Form              interface{}
   UrlPath        string
   Renderinfo     interface{}
+  redirect       bool
+  RedirectPath   string
 }
 
+func (ctx *AppContext)  IsRedirect() bool{
+   return ctx.redirect 
+}
+
+func (ctx *AppContext)  SetRedirect() {
+   ctx.redirect = true
+}
+
+func (ctx *AppContext)  ClearRedirect() {
+   ctx.redirect = false
+}
 
 func (ctx *AppContext) GetConfigValue(key string,defaultValue interface{}) interface{} {
    val := ctx.ConfigContext.ConfigParam[key]

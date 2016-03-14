@@ -107,6 +107,7 @@ func initDefaultFilterFuncMap() map[string]filter.FilterFunc {
   funcMap[constvalue.ParameterBinderFilter] =  filter.ParameterBinderFilter
   funcMap[constvalue.RenderBindFilter] =  filter.RenderBindFilter
   funcMap[constvalue.RenderOutPutFilter] =  filter.RenderOutPutFilter
+  funcMap[constvalue.RedirectFilter] =  filter.GetRedirectFilter()
   return funcMap
 }
 

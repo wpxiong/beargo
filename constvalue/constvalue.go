@@ -37,8 +37,12 @@ const (
   ParameterBinderFilter = "ParameterBinderFilter"
   RenderBindFilter = "RenderBindFilter"
   RenderOutPutFilter = "RenderOutPutFilter"
+  RedirectFilter = "RedirectFilter"
   
   MemorySessionProvider = "MemorySessionProvider"
+  
+  
+  REDIRECT_ERROR = "REDIRECT_ERROR"
   
 )
 
@@ -47,6 +51,6 @@ var DEFULT_AFTER_FILTER []string
 
 func init(){
   DEFULT_BEFORE_FILTER = []string{"ParameterParseFilter","ParameterBinderFilter"}
-  DEFULT_AFTER_FILTER = []string {"RenderBindFilter","RenderOutPutFilter"}
+  DEFULT_AFTER_FILTER = []string {"RedirectFilter","RenderBindFilter","RenderOutPutFilter"}
 }
 

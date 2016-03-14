@@ -47,3 +47,10 @@ func StringToBool(valStr string) interface{} {
      return nil
   }
 }
+
+
+func Redirect(errorInfo string) {
+
+}
+
+

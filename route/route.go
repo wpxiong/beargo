@@ -110,6 +110,42 @@ func (rtp *RouteInfo ) ResourceClean(appContext *appcontext.AppContext) {
 }
 
 
+func (rtp *RouteInfo ) CallRedirectMethod(appContext *appcontext.AppContext){
+    var funcmap reflect.Value = rtp.getFuncmap()
+    res := filter.ProcessRedirectBeforeFilter(appContext)
+    if !res {
+       return 
+    }
+    v := make([]reflect.Value,2)
+    v[0] = reflect.ValueOf(appContext)
+    v[1] = reflect.ValueOf(appContext.Form)
+    defer func() {
+        if err := recover(); err != nil {
+            log.Error("Call Controller Method Error")
+            res = filter.ProcessAfterFilter(appContext)
+        }
+    }()
+    
+    beforeFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.BEFORE_FUNC)
+    afterFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.AFTER_FUNC)
+    var result []reflect.Value = beforeFunc.Call(v)
+
+    if (result[0].Interface()).(bool) == false {
+      return 
+    }
+    
+    funcmap.Call(v)
+    result = afterFunc.Call(v)
+    if (result[0].Interface()).(bool) == false {
+      return 
+    }
+    res = filter.ProcessAfterFilter(appContext)
+    if !res {
+       return 
+    }
+}
+
+
 func (rtp *RouteInfo ) CallMethod() {
     var funcmap reflect.Value = rtp.getFuncmap()
     var appContext *appcontext.AppContext = &appcontext.AppContext{ControllerMethodInfo :rtp.methodInfo,FormType:rtp.formType}
@@ -275,7 +311,6 @@ func (rtp *RouteProcess ) ProcessRequest(request * webhttp.HttpRequest) *RouteIn
    }
    return rinfo
 }
-
 
 func (node *TreeNode ) debugInfo() {
     log.DebugNoReturn("{nodeValue:" + node.nodeValue + ",left_children:[")
