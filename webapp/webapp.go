@@ -246,6 +246,7 @@ func (web *WebApplication) Start() {
        return
     }
     web.WorkProcess.Init_Default()
+    session.StartSessionManager()
     res := <- web.control
     if res == 1 {
        process.StopWork(webApp.WorkProcess)

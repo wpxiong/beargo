@@ -17,7 +17,9 @@ func init() {
   log.InitLog()
 }
 
-
+const (
+   SESSION_SCAN_TIME = 5 //second
+)
 
 type sessionManager struct {
   Sessionprovider   SessionProvider
@@ -65,6 +67,23 @@ func generateId() string {
   return text
 }
 
+func StartSessionManager() {
+   go sessionmanager.startSessionManagerListener()
+}
+
+func (this* sessionManager ) startSessionManagerListener() {
+   for true {
+      for key,value := range this.sessionInfoMap {
+         if value.sessionInvalidateTime.Before(time.Now()) {
+            this.sessionAccess.Lock()
+            delete(this.sessionInfoMap,key)
+            this.Sessionprovider.DeleteSession(key)
+            this.sessionAccess.Unlock()
+         }
+      }
+      time.Sleep(time.Second * time.Duration(SESSION_SCAN_TIME))
+   }
+}
 
 func (this *sessionManager ) getSession(sessionId string) Session {
    var res bool = true
