@@ -42,8 +42,12 @@ const (
   RenderBindinterceptor = "RenderBindinterceptor"
   RenderOutPutinterceptor = "RenderOutPutinterceptor"
   Redirectinterceptor = "Redirectinterceptor"
+  Sessioninterceptor = "Sessioninterceptor"
+  Xsrfinterceptor = "Xsrfinterceptor"
   
   MemorySessionProvider = "MemorySessionProvider"
+  
+  
   
   ERROR_403 = "/error_403"
   ERROR_404 = "/error_404"
@@ -58,6 +62,7 @@ const (
   
   REDIRECT_ERROR = "REDIRECT_ERROR"
   
+  XSRF_TOKEN = "XSRF_TOKEN"
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"
@@ -70,7 +75,7 @@ var DEFULT_BEFORE_interceptor []string
 var DEFULT_AFTER_interceptor []string
 
 func init(){
-  DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor"}
+  DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor","Sessioninterceptor","Xsrfinterceptor"}
   DEFULT_AFTER_interceptor = []string {"Redirectinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
   
   DEFAULT_ERROR_403_PATH = strings.Replace(DEFAULT_ERROR_403_PATH, "/", string(os.PathSeparator), -1)

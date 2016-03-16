@@ -109,6 +109,8 @@ func initDefaultInterceptorFuncMap() map[string]interceptor.InterceptorFunc {
   funcMap[constvalue.RenderBindinterceptor] =  interceptor.RenderBindinterceptor
   funcMap[constvalue.RenderOutPutinterceptor] =  interceptor.RenderOutPutinterceptor
   funcMap[constvalue.Redirectinterceptor] =  redirectinterceptor.Redirectinterceptor
+  funcMap[constvalue.Sessioninterceptor] =  interceptor.Sessioninterceptor
+  funcMap[constvalue.Xsrfinterceptor] =  interceptor.Xsrfinterceptor
   return funcMap
 }
 
