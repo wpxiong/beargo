@@ -44,6 +44,19 @@ type DBTableInterface interface {
    GetDbTableName() string
 }
 
+type DBTableInterface interface {
+   GetDbTableName() string
+}
+
+
+type DBTable struct {
+
+}
+
+func (this *DBTable) GetDbTableName() string {
+   return reflect.TypeOf(*this).Name()
+}
+
 
 func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
    module :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword}
@@ -69,6 +82,7 @@ func (this *Moudle) initModuleInstance(){
 }
 
 
+
 func (this *Moudle) AddTable(dbtable interface{}){
   if !this.connectionStatus {
      return 
@@ -88,6 +102,9 @@ func (this *Moudle) AddTable(dbtable interface{}){
      dbInfo.DbStuct = dbtable
      this.DbTableInfo[dbname] = dbInfo
      dbutil.GetCreateTableSql()
+     log.Debug(reflect.TypeOf(dbtable).Elem().Kind()) 
+     this.DbTableInfo[dbtable.GetDbTableName()] = dbInfo
+     log.Debug(this.DbTableInfo)
   }
 
 }

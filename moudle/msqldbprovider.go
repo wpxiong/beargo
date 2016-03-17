@@ -23,9 +23,6 @@ func (this *MysqlDBProvider ) ConnectionDb(dburl string) error {
   return err
 }
 
-func (this *MysqlDBProvider ) Query(sql string) (*sql.Rows ,error){
-   return this.db.Query(sql)
-}
 
 func (this *MysqlDBProvider ) Insert(sql string) (sql.Result ,error){
    return this.db.Exec(sql)
