@@ -1,4 +1,4 @@
-package form
+package dbutil
 
 import (
   "github.com/wpxiong/beargo/log"
@@ -7,7 +7,3 @@ import (
 func init() {
   log.InitLog()
 }
-
-type Form interface{}
-
-

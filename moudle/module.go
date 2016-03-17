@@ -2,43 +2,92 @@ package moudle
 
 import (
   "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/util/dbutil"
+  "reflect"
+  "strings"
 )
 
 func init() {
   log.InitLog()
 }
 
-type DBTable struct {
 
-}
+type DbDialectType int
 
-func (this *DBTable) CreateDB (){
-
-}
-
-func (this *DBTable) DeleteDB (){
-
-}
-
+const (
+    MYSQL   DbDialectType = iota
+    SQLITE
+    POSTGRESQL
+)
 
 type DBTableInfo struct {
   DbName        string
   DbSchema      string
-  DbStuct       DBTable
+  DbStuct       interface{}
   FiledList     map[string] reflect.Type
+  FiledNameMap  map[string] string
   DbTableExist  bool
 }
 
-
-type Moudle stuct {
-  DbDialect        string
-  DbPort           int
+type Moudle struct {
+  DbDialect        DbDialectType
+  DbName           string
   DbConnectionUrl  string
   DbUserName       string
   DbPassword       string
-  DbTableInfo       map[string]DBTableInfo
+  DbTableInfo      map[string]DBTableInfo
+  DbProiver        DbProviderInterface
+  connectionStatus bool
 }
 
-func CreateModuleInstance(DbDialect string,DbPort int,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
-   return &Moudle{DbDialect:DbDialect,DbPort:DbPort,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword}
+type DBTableInterface interface {
+   GetDbTableName() string
+}
+
+
+func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
+   module :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword}
+   module.initModuleInstance()
+   return module
+}
+
+func (this *Moudle) initModuleInstance(){
+   this.DbTableInfo = make(map[string]DBTableInfo)
+   var connectionUrl string  
+   switch this.DbDialect {
+      case MYSQL :
+        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName;
+        this.DbProiver = &MysqlDBProvider{}
+      case POSTGRESQL :
+   }
+   err := this.DbProiver.ConnectionDb(connectionUrl)
+   if err != nil {
+      log.Error("DB Connection Error!")
+   }else {
+      this.connectionStatus = true
+   }
+}
+
+
+func (this *Moudle) AddTable(dbtable interface{}){
+  if !this.connectionStatus {
+     return 
+  }else {
+     dbInfo := DBTableInfo{}
+     dbname := strings.ToLower(reflect.TypeOf(dbtable).Name())
+     fieldNum := reflect.TypeOf(dbtable).NumField()
+     dbInfo.FiledList = make(map[string]reflect.Type)
+     dbInfo.FiledNameMap = make(map[string]string)
+     for i:=0;i<fieldNum;i++{
+         field := reflect.TypeOf(dbtable).Field(i)
+         dbInfo.FiledList[field.Name] = field.Type
+         dbInfo.FiledNameMap[strings.ToLower(field.Name)] = field.Name
+     }
+     dbInfo.DbName = dbname
+     dbInfo.DbSchema = ""
+     dbInfo.DbStuct = dbtable
+     this.DbTableInfo[dbname] = dbInfo
+     dbutil.GetCreateTableSql()
+  }
+
 }
