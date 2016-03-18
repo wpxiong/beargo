@@ -63,6 +63,15 @@ const (
   REDIRECT_ERROR = "REDIRECT_ERROR"
   
   XSRF_TOKEN = "XSRF_TOKEN"
+  
+  
+  DB_ID = "id"
+  DB_COLUMN_NAME = "column_name"
+  DB_NOT_NULL = "notnull"
+  DB_LENGTH = "length"
+  DB_SCALE = "scale"
+  DB_UNIQUE_KEY = "unique_key"
+  DB_DEFAULT_VALUE = "default_value"
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"
