@@ -2,11 +2,7 @@ package moudle
 
 import (
   "github.com/wpxiong/beargo/log"
-<<<<<<< HEAD
   "github.com/wpxiong/beargo/constvalue"
-=======
-  "github.com/wpxiong/beargo/util/dbutil"
->>>>>>> origin/master
   "reflect"
   "strings"
 )
@@ -17,7 +13,6 @@ func init() {
 
 
 type DbDialectType int
-<<<<<<< HEAD
 
 const (
     MYSQL   DbDialectType = iota
@@ -35,25 +30,14 @@ type ColumnInfo struct {
   UniqueKey     string
   DefaultValue  string
 }
-=======
->>>>>>> origin/master
 
-const (
-    MYSQL   DbDialectType = iota
-    SQLITE
-    POSTGRESQL
-)
 
 type DBTableInfo struct {
   DbName        string
   DbSchema      string
   DbStuct       interface{}
   FiledList     map[string] reflect.Type
-<<<<<<< HEAD
   FiledNameMap  map[string] ColumnInfo
-=======
-  FiledNameMap  map[string] string
->>>>>>> origin/master
   DbTableExist  bool
 }
 
@@ -66,32 +50,9 @@ type Moudle struct {
   DbTableInfo      map[string]DBTableInfo
   DbProiver        DbProviderInterface
   connectionStatus bool
-<<<<<<< HEAD
-=======
-}
-
-type DBTableInterface interface {
-   GetDbTableName() string
->>>>>>> origin/master
-}
-
-type DBTableInterface interface {
-   GetDbTableName() string
 }
 
 
-<<<<<<< HEAD
-=======
-type DBTable struct {
-
-}
-
-func (this *DBTable) GetDbTableName() string {
-   return reflect.TypeOf(*this).Name()
-}
-
-
->>>>>>> origin/master
 func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
    module :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword}
    module.initModuleInstance()
@@ -116,7 +77,6 @@ func (this *Moudle) initModuleInstance(){
 }
 
 
-<<<<<<< HEAD
 func isEmpty(strvalue string) bool {
   if strings.Trim(strvalue," ") == "" {
      return true
@@ -137,10 +97,6 @@ func (this *Moudle) AddTableWithSchema(dbtable interface{},tableName string ,tab
 }
 
 func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname string){
-=======
-
-func (this *Moudle) AddTable(dbtable interface{}){
->>>>>>> origin/master
   if !this.connectionStatus {
      return 
   }else {
@@ -148,7 +104,6 @@ func (this *Moudle) AddTable(dbtable interface{}){
      dbname := strings.ToLower(reflect.TypeOf(dbtable).Name())
      fieldNum := reflect.TypeOf(dbtable).NumField()
      dbInfo.FiledList = make(map[string]reflect.Type)
-<<<<<<< HEAD
      dbInfo.FiledNameMap = make(map[string]ColumnInfo)
      for i:=0;i<fieldNum;i++{
          field := reflect.TypeOf(dbtable).Field(i)
@@ -208,22 +163,7 @@ func (this *Moudle) AddTable(dbtable interface{}){
      }
      dbInfo.DbStuct = dbtable
      this.DbTableInfo[dbname] = dbInfo
-=======
-     dbInfo.FiledNameMap = make(map[string]string)
-     for i:=0;i<fieldNum;i++{
-         field := reflect.TypeOf(dbtable).Field(i)
-         dbInfo.FiledList[field.Name] = field.Type
-         dbInfo.FiledNameMap[strings.ToLower(field.Name)] = field.Name
-     }
-     dbInfo.DbName = dbname
-     dbInfo.DbSchema = ""
-     dbInfo.DbStuct = dbtable
-     this.DbTableInfo[dbname] = dbInfo
-     dbutil.GetCreateTableSql()
      log.Debug(reflect.TypeOf(dbtable).Elem().Kind()) 
-     this.DbTableInfo[dbtable.GetDbTableName()] = dbInfo
      log.Debug(this.DbTableInfo)
->>>>>>> origin/master
   }
-
 }

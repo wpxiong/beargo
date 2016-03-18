@@ -23,12 +23,9 @@ func (this *MysqlDBProvider ) ConnectionDb(dburl string) error {
   return err
 }
 
-<<<<<<< HEAD
 func (this *MysqlDBProvider ) Query(sql string) (*sql.Rows ,error){
    return this.db.Query(sql)
 }
-=======
->>>>>>> origin/master
 
 func (this *MysqlDBProvider ) Insert(sql string) (sql.Result ,error){
    return this.db.Exec(sql)
