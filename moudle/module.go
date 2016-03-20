@@ -29,6 +29,8 @@ type ColumnInfo struct {
   Scale         int
   UniqueKey     string
   DefaultValue  string
+  FieldName     string
+  FieldType     reflect.Type
 }
 
 
@@ -36,7 +38,6 @@ type DBTableInfo struct {
   DbName        string
   DbSchema      string
   DbStuct       interface{}
-  FiledList     map[string] reflect.Type
   FiledNameMap  map[string] ColumnInfo
   DbTableExist  bool
 }
@@ -96,6 +97,48 @@ func (this *Moudle) AddTableWithSchema(dbtable interface{},tableName string ,tab
    this.addTable(dbtable,tableName,tableSchema)
 }
 
+
+func (this *Moudle)  getDBIntType() string {
+   return this.DbProiver.GetDBIntType()
+}
+
+func (this *Moudle)  getDBInt8Type() string {
+   return this.DbProiver.GetDBInt8Type()
+}
+
+func (this *Moudle)  getDBInt16Type() string {
+    return this.DbProiver.GetDBInt16Type()
+}
+
+func (this *Moudle)  getDBInt32Type() string {
+   return this.DbProiver.GetDBInt32Type()
+}
+
+func (this *Moudle)  getDBInt64Type() string {
+  return this.DbProiver.GetDBInt64Type()
+}
+
+func (this *Moudle)  getDBUintType() string {
+  return this.DbProiver.GetDBUintType()
+}
+
+func (this *Moudle)  getDBUint8Type() string {
+  return this.DbProiver.GetDBUint8Type()
+}
+
+func (this *Moudle)  getDBUint16Type() string {
+  return this.DbProiver.GetDBUint16Type()
+}
+
+func (this *Moudle)  getDBUint32Type() string {
+  return this.DbProiver.GetDBUint32Type()
+}
+
+func (this *Moudle)  getDBUint64Type() string {
+  return this.DbProiver.GetDBUint64Type()
+}
+
+
 func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname string){
   if !this.connectionStatus {
      return 
@@ -103,11 +146,11 @@ func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname str
      dbInfo := DBTableInfo{}
      dbname := strings.ToLower(reflect.TypeOf(dbtable).Name())
      fieldNum := reflect.TypeOf(dbtable).NumField()
-     dbInfo.FiledList = make(map[string]reflect.Type)
      dbInfo.FiledNameMap = make(map[string]ColumnInfo)
      for i:=0;i<fieldNum;i++{
          field := reflect.TypeOf(dbtable).Field(i)
          id := field.Tag.Get(constvalue.DB_ID)
+         columnInfo := ColumnInfo{}
          column_name := field.Tag.Get(constvalue.DB_COLUMN_NAME)
          not_null := field.Tag.Get(constvalue.DB_NOT_NULL)
          length := field.Tag.Get(constvalue.DB_LENGTH)
@@ -124,15 +167,25 @@ func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname str
          
          switch field.Type.Kind() {
             case reflect.Int:
+              columnInfo.SqlType = this.getDBIntType()
             case reflect.Int8:
+              columnInfo.SqlType = this.getDBInt8Type()
             case reflect.Int16:
+              columnInfo.SqlType = this.getDBInt16Type()
             case reflect.Int32:
+              columnInfo.SqlType = this.getDBInt32Type()
             case reflect.Int64:
+              columnInfo.SqlType = this.getDBInt64Type()
             case reflect.Uint:
+              columnInfo.SqlType = this.getDBUintType()
             case reflect.Uint8:
+              columnInfo.SqlType = this.getDBUint8Type()
             case reflect.Uint16:
+              columnInfo.SqlType = this.getDBUint16Type()
             case reflect.Uint32:
+              columnInfo.SqlType = this.getDBUint32Type()
             case reflect.Uint64:
+              columnInfo.SqlType = this.getDBUint64Type()
             case reflect.Uintptr:
             case reflect.Float32:
             case reflect.Float64:
@@ -145,11 +198,14 @@ func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname str
             case reflect.Slice:
             case reflect.Map:
          }
-         dbInfo.FiledList[field.Name] = field.Type
+         columnInfo.FieldType = field.Type
+         columnInfo.FieldName = field.Name
          if !isEmpty(column_name) {
-           field.Name = column_name
+            columnInfo.ColumnName = column_name
+         }else{
+            columnInfo.ColumnName = field.Name
          }
-         dbInfo.FiledNameMap[strings.ToLower(field.Name)] = ColumnInfo{ColumnName:field.Name}
+         dbInfo.FiledNameMap[strings.ToLower(field.Name)] = columnInfo
      }
      if tablename == "" {
        dbInfo.DbName = dbname

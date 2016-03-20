@@ -34,3 +34,44 @@ func (this *MysqlDBProvider ) Insert(sql string) (sql.Result ,error){
 func (this *MysqlDBProvider ) CreateTable(sql string) (sql.Result ,error){
    return this.db.Exec(sql)
 }
+
+
+func (this *MysqlDBProvider ) GetDBIntType() string {
+  return "INT "
+}
+
+func (this *MysqlDBProvider )  GetDBInt8Type() string {
+   return "TINYINT "
+}
+
+func (this *MysqlDBProvider ) GetDBInt16Type() string {
+   return "SMALLINT"
+}
+
+func (this *MysqlDBProvider )  GetDBInt32Type() string {
+  return "SMALLINT"
+}
+
+func (this *MysqlDBProvider ) GetDBInt64Type() string {
+  return "BIGINT"
+}
+
+func (this *MysqlDBProvider )  GetDBUintType() string {
+  return "INT "
+}
+
+func (this *MysqlDBProvider )  GetDBUint8Type() string {
+   return "TINYINT "
+}
+
+func (this *MysqlDBProvider )  GetDBUint16Type() string {
+  return "SMALLINT"
+}
+
+func (this *MysqlDBProvider )  GetDBUint32Type() string {
+    return "INT "
+}
+
+func (this *MysqlDBProvider )  GetDBUint64Type() string {
+  return "BIGINT"
+}
