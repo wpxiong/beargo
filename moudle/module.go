@@ -3,6 +3,7 @@ package moudle
 import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/constvalue"
+  "github.com/wpxiong/beargo/util"
   "reflect"
   "strings"
 )
@@ -28,7 +29,7 @@ type ColumnInfo struct {
   Length        int
   Scale         int
   UniqueKey     string
-  DefaultValue  string
+  DefaultValue  interface{}
   FieldName     string
   FieldType     reflect.Type
 }
@@ -160,32 +161,65 @@ func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname str
          
          log.Debug(id)
          log.Debug(not_null)
+         
          log.Debug(length)
          log.Debug(scale)
+         
          log.Debug(unique_key)
+         
          log.Debug(default_value)
          
          switch field.Type.Kind() {
             case reflect.Int:
               columnInfo.SqlType = this.getDBIntType()
+              if val,err := util.GetIntValue(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Int8:
               columnInfo.SqlType = this.getDBInt8Type()
+              if val,err := util.GetInt8Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Int16:
               columnInfo.SqlType = this.getDBInt16Type()
+              if val,err := util.GetInt16Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Int32:
               columnInfo.SqlType = this.getDBInt32Type()
+              if val,err := util.GetInt32Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Int64:
               columnInfo.SqlType = this.getDBInt64Type()
+              if val,err := util.GetInt64Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Uint:
               columnInfo.SqlType = this.getDBUintType()
+              if val,err := util.GetUintValue(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Uint8:
               columnInfo.SqlType = this.getDBUint8Type()
+              if val,err := util.GetUint8Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Uint16:
               columnInfo.SqlType = this.getDBUint16Type()
+              if val,err := util.GetUint16Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Uint32:
               columnInfo.SqlType = this.getDBUint32Type()
+              if val,err := util.GetUint32Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Uint64:
               columnInfo.SqlType = this.getDBUint64Type()
+              if val,err := util.GetUint64Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Uintptr:
             case reflect.Float32:
             case reflect.Float64:
