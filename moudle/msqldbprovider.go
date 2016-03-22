@@ -75,3 +75,24 @@ func (this *MysqlDBProvider )  GetDBUint32Type() string {
 func (this *MysqlDBProvider )  GetDBUint64Type() string {
   return "BIGINT"
 }
+
+func (this *MysqlDBProvider )  GetDBFloat32Type() string {
+  return "FLOAT"
+}
+
+func (this *MysqlDBProvider )  GetDBFloat64Type() string {
+  return "DOUBLE"
+}
+
+func (this *MysqlDBProvider )  GetDBComplex64Type() string {
+  return "VARCHAR(64)"
+}
+
+func (this *MysqlDBProvider )  GetDBComplex128Type() string {
+  return "VARCHAR(128)"
+}
+
+func (this *MysqlDBProvider )  GetDBBoolType() string {
+  return "char(1)"
+}
+
