@@ -139,6 +139,29 @@ func (this *Moudle)  getDBUint64Type() string {
   return this.DbProiver.GetDBUint64Type()
 }
 
+func (this *Moudle)  getDBFloat32Type() string {
+  return this.DbProiver.GetDBFloat32Type()
+}
+
+
+func (this *Moudle)  getDBFloat64Type() string {
+  return this.DbProiver.GetDBFloat64Type()
+}
+
+func (this *Moudle)  getDBComplex64Type() string {
+  return this.DbProiver.GetDBComplex64Type()
+}
+
+func (this *Moudle)  getDBComplex128Type() string {
+  return this.DbProiver.GetDBComplex128Type()
+}
+
+func (this *Moudle)  getDBBoolType() string {
+  return this.DbProiver.GetDBBoolType()
+}
+
+
+
 
 func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname string){
   if !this.connectionStatus {
@@ -221,16 +244,42 @@ func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname str
                  columnInfo.DefaultValue = val
               }
             case reflect.Uintptr:
+              continue
             case reflect.Float32:
+              columnInfo.SqlType = this.getDBFloat32Type()
+              if val,err := util.GetFloat32Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Float64:
+              columnInfo.SqlType = this.getDBFloat64Type()
+              if val,err := util.GetFloat64Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Complex64:
+              columnInfo.SqlType = this.getDBComplex64Type()
+              if val,err := util.GetComplex64Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Complex128:
+              columnInfo.SqlType = this.getDBComplex128Type()
+              if val,err := util.GetComplex128Value(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Array:
+              continue
             case reflect.Bool:
+              columnInfo.SqlType = this.getDBBoolType()
+              if val,err := util.GetBoolValue(default_value); err == nil {
+                 columnInfo.DefaultValue = val
+              }
             case reflect.Ptr:
+              continue
             case reflect.Struct:
+            
             case reflect.Slice:
+              continue
             case reflect.Map:
+              continue
          }
          columnInfo.FieldType = field.Type
          columnInfo.FieldName = field.Name

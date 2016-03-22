@@ -24,5 +24,10 @@ type DbProviderInterface interface {
    GetDBUint16Type() string
    GetDBUint32Type() string
    GetDBUint64Type() string
+   GetDBFloat32Type() string
+   GetDBFloat64Type() string
+   GetDBComplex64Type() string
+   GetDBComplex128Type() string
+   GetDBBoolType() string
 }
 
