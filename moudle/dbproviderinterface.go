@@ -14,6 +14,7 @@ type DbProviderInterface interface {
    Query(sql string) (*sql.Rows ,error)
    Insert(sql string) (sql.Result ,error)
    CreateTable(sql string) (sql.Result ,error)
+   DropTable(tableName string) (sql.Result ,error)
    GetDBIntType() string
    GetDBInt8Type() string
    GetDBInt16Type() string
@@ -29,5 +30,9 @@ type DbProviderInterface interface {
    GetDBComplex64Type() string
    GetDBComplex128Type() string
    GetDBBoolType() string
+   GetDBStringType() string
+   GetDBTimeType() string
+   CreateSqlTypeByLength(sqlType string,length int, scale int) string
+   CreateDefaultValue(defaultValue interface{}) string
 }
 

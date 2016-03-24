@@ -4,7 +4,9 @@ import (
   "strconv"
   "strings"
   "errors"
+  "time"
   "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/constvalue"
 )
 
 func init() {
@@ -143,12 +145,22 @@ func GetComplex128Value(str string) (complex128,error) {
 }
 
 func GetBoolValue(str string) (bool,error) {
-   if str == "1" {
+   if str == "true" || str == "1" {
      return true,nil
-   }else if str == "0" {
+   }else if str == "false" || str == "0" {
      return false,nil
    }
    return true,errors.New("string to bool value is error")
 }
+
+func GetTimeValue(str string) (time.Time,error) {
+    layout := constvalue.DEFAULT_TIME_FORMATE
+    log.Debug(str)
+    t, err := time.Parse(layout, str)
+    log.Debug(err)
+    return t,err
+}
+
+
 
 

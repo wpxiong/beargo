@@ -72,6 +72,9 @@ const (
   DB_SCALE = "scale"
   DB_UNIQUE_KEY = "unique_key"
   DB_DEFAULT_VALUE = "default_value"
+  
+  DEFAULT_TIME_FORMATE = "2006-01-02 15:04:06"
+  
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"

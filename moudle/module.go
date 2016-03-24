@@ -103,12 +103,51 @@ func (this *Moudle) AddTableWithSchema(dbtable interface{},tableName string ,tab
 }
 
 
+func (this *Moudle) droptable(tablename string) {
+   _,err := this.DbProiver.DropTable(tablename)
+   if err != nil {
+      log.Error(err)
+   }
+}
+
+func (this *Moudle) createtable(sqlstr string) {
+   _,err := this.DbProiver.CreateTable(sqlstr)
+   if err != nil {
+      log.Error(err)
+   }
+}
+
 func (this *Moudle)  InitialDB(create bool) {
   log.Debug("Initial DB start")
   if create {
     //create Table
+    var index int = 0
+    for key,Info := range this.DbTableInfo {
+      this.droptable(key)
+      var create_sql string = "create table " + key + " ( "
+      for _,column := range Info.FiledNameMap {
+        if column.RelationStructName != "" {
+           continue
+        }
+        columnstr := column.ColumnName + " " +  this.createSqlTypeByLength(column.SqlType,column.Length,column.Scale)
+        if column.NotNull {
+           columnstr += " not null "
+        }
+        if column.Unique {
+           columnstr += " unique "
+        }
+        columnstr += this.createDefaultValue(column.DefaultValue)
+        columnstr += ",\n"
+        create_sql += columnstr
+        index ++
+      }
+      create_sql = create_sql[0:len(create_sql)-2]
+      create_sql += "\n)"
+      this.createtable(create_sql)
+    }
   }else {
     //check Table is exist in DB
+    
   }
 }
 
@@ -175,7 +214,23 @@ func (this *Moudle)  getDBBoolType() string {
   return this.DbProiver.GetDBBoolType()
 }
 
+func (this *Moudle)  getDBStringType() string {
+  return this.DbProiver.GetDBStringType()
+}
 
+func (this *Moudle)  getDBTimeType() string {
+  return this.DbProiver.GetDBTimeType()
+}
+
+
+
+func (this *Moudle)  createSqlTypeByLength(sqltype string, length int,scale int) string {
+  return this.DbProiver.CreateSqlTypeByLength(sqltype,length,scale)
+}
+
+func (this *Moudle)  createDefaultValue(defaultValue interface{}) string {
+  return this.DbProiver.CreateDefaultValue(defaultValue)
+}
 
 func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname string){
   if !this.connectionStatus {
@@ -195,7 +250,6 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          scale := field.Tag.Get(constvalue.DB_SCALE)
          unique_key := field.Tag.Get(constvalue.DB_UNIQUE_KEY)
          default_value := field.Tag.Get(constvalue.DB_DEFAULT_VALUE)
-         
          switch field.Type.Kind() {
             case reflect.Int:
               columnInfo.SqlType = this.getDBIntType()
@@ -279,15 +333,22 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
             case reflect.Ptr:
               continue
             case reflect.Struct:
-              // foreign key
-              columnInfo.RelationStructName = field.Type.Name()
-              columnInfo.IsArray = false
+              if field.Type.Name() == "Time" {
+                columnInfo.SqlType = this.getDBTimeType()
+                columnInfo.DefaultValue = default_value
+              }else {
+                columnInfo.RelationStructName = field.Type.Name()
+                columnInfo.IsArray = false
+              }
             case reflect.Slice:
               // foreign key
               columnInfo.RelationStructName = field.Type.Elem().Name()
               columnInfo.IsArray = true
             case reflect.Map:
               continue
+            case reflect.String:
+              columnInfo.SqlType = this.getDBStringType()
+              columnInfo.DefaultValue = default_value
          }
          columnInfo.FieldType = field.Type
          columnInfo.FieldName = field.Name
@@ -305,12 +366,12 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
             columnInfo.NotNull = true
          }
          
-         if len,err := util.GetIntValue(length); err == nil {
-             columnInfo.Length = int(len)
-         }
-         
          if len,err := util.GetIntValue(scale); err == nil {
              columnInfo.Scale = int(len)
+         }
+         
+         if len,err := util.GetIntValue(length); err == nil {
+             columnInfo.Length = int(len)
          }
          
          if strings.ToLower(strings.Trim(unique_key," ")) == "true" {
