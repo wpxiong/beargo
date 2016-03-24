@@ -28,23 +28,19 @@ type ColumnInfo struct {
   IsId          bool
   Length        int
   Scale         int
-  Unique        bool
+  UniqueKey     string
   DefaultValue  interface{}
   FieldName     string
   FieldType     reflect.Type
-  RelationTable *DBTableInfo
-  RelationStructName  string
-  IsArray       bool
 }
 
 
 type DBTableInfo struct {
-  TableName        string
+  DbName        string
   DbSchema      string
   DbStuct       interface{}
   FiledNameMap  map[string] ColumnInfo
   DbTableExist  bool
-  StructName    string
 }
 
 type Moudle struct {
@@ -101,17 +97,6 @@ func (this *Moudle) AddTable(dbtable interface{}){
 func (this *Moudle) AddTableWithSchema(dbtable interface{},tableName string ,tableSchema string){
    this.addTable(dbtable,tableName,tableSchema)
 }
-
-
-func (this *Moudle)  InitialDB(create bool) {
-  log.Debug("Initial DB start")
-  if create {
-    //create Table
-  }else {
-    //check Table is exist in DB
-  }
-}
-
 
 
 func (this *Moudle)  getDBIntType() string {
@@ -177,14 +162,15 @@ func (this *Moudle)  getDBBoolType() string {
 
 
 
-func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname string){
+
+func (this *Moudle) addTable(dbtable interface{},tablename string,schemaname string){
   if !this.connectionStatus {
      return 
   }else {
-     tableInfo := DBTableInfo{}
-     tablenamestr := strings.ToLower(reflect.TypeOf(dbtable).Name())
+     dbInfo := DBTableInfo{}
+     dbname := strings.ToLower(reflect.TypeOf(dbtable).Name())
      fieldNum := reflect.TypeOf(dbtable).NumField()
-     tableInfo.FiledNameMap = make(map[string]ColumnInfo)
+     dbInfo.FiledNameMap = make(map[string]ColumnInfo)
      for i:=0;i<fieldNum;i++{
          field := reflect.TypeOf(dbtable).Field(i)
          id := field.Tag.Get(constvalue.DB_ID)
@@ -195,6 +181,16 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          scale := field.Tag.Get(constvalue.DB_SCALE)
          unique_key := field.Tag.Get(constvalue.DB_UNIQUE_KEY)
          default_value := field.Tag.Get(constvalue.DB_DEFAULT_VALUE)
+         
+         log.Debug(id)
+         log.Debug(not_null)
+         
+         log.Debug(length)
+         log.Debug(scale)
+         
+         log.Debug(unique_key)
+         
+         log.Debug(default_value)
          
          switch field.Type.Kind() {
             case reflect.Int:
@@ -279,13 +275,9 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
             case reflect.Ptr:
               continue
             case reflect.Struct:
-              // foreign key
-              columnInfo.RelationStructName = field.Type.Name()
-              columnInfo.IsArray = false
+            
             case reflect.Slice:
-              // foreign key
-              columnInfo.RelationStructName = field.Type.Elem().Name()
-              columnInfo.IsArray = true
+              continue
             case reflect.Map:
               continue
          }
@@ -296,40 +288,21 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          }else{
             columnInfo.ColumnName = field.Name
          }
-         
-         if strings.ToLower(strings.Trim(id," ")) == "true" {
-            columnInfo.IsId = true
-         }
-         
-         if strings.ToLower(strings.Trim(not_null," ")) == "true" {
-            columnInfo.NotNull = true
-         }
-         
-         if len,err := util.GetIntValue(length); err == nil {
-             columnInfo.Length = int(len)
-         }
-         
-         if len,err := util.GetIntValue(scale); err == nil {
-             columnInfo.Scale = int(len)
-         }
-         
-         if strings.ToLower(strings.Trim(unique_key," ")) == "true" {
-            columnInfo.Unique = true
-         }
-         tableInfo.FiledNameMap[strings.ToLower(field.Name)] = columnInfo
+         dbInfo.FiledNameMap[strings.ToLower(field.Name)] = columnInfo
      }
-     if tableName == "" {
-       tableInfo.TableName = tablenamestr
+     if tablename == "" {
+       dbInfo.DbName = dbname
      }else {
-       tableInfo.TableName = tableName
+       dbInfo.DbName = tablename
      }
      if schemaname == "" {
-       tableInfo.DbSchema = ""
+       dbInfo.DbSchema = ""
      }else {
-       tableInfo.DbSchema = schemaname
+       dbInfo.DbSchema = schemaname
      }
-     tableInfo.DbStuct = dbtable
-     tableInfo.StructName = tablenamestr
-     this.DbTableInfo[tableInfo.TableName] = tableInfo
+     dbInfo.DbStuct = dbtable
+     this.DbTableInfo[dbname] = dbInfo
+     log.Debug(reflect.TypeOf(dbtable).Elem().Kind()) 
+     log.Debug(this.DbTableInfo)
   }
 }
