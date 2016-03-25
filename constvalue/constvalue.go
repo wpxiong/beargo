@@ -72,6 +72,7 @@ const (
   DB_SCALE = "scale"
   DB_UNIQUE_KEY = "unique_key"
   DB_DEFAULT_VALUE = "default_value"
+  DB_AUTO_INCREMENT = "auto_increment"
   
   DEFAULT_TIME_FORMATE = "2006-01-02 15:04:06"
   

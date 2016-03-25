@@ -4,6 +4,7 @@ import (
   "github.com/wpxiong/beargo/log"
   "database/sql"
   "strconv"
+  "strings"
   "reflect"
   _ "github.com/go-sql-driver/mysql"
 )
@@ -14,6 +15,19 @@ func init() {
 
 type MysqlDBProvider struct {
    db *sql.DB
+}
+
+
+func (this *MysqlDBProvider ) Begin() (*sql.Tx,error) {
+   return this.db.Begin()
+}
+
+func (this *MysqlDBProvider )  Commit(tx *sql.Tx) error {
+   return tx.Commit()
+}
+
+func (this *MysqlDBProvider )  Close() error{
+   return this.db.Close()
 }
 
 func (this *MysqlDBProvider ) ConnectionDb(dburl string) error {
@@ -35,11 +49,29 @@ func (this *MysqlDBProvider ) Insert(sql string) (sql.Result ,error){
    return this.db.Exec(sql)
 }
 
-func (this *MysqlDBProvider ) CreateTable(sql string) (sql.Result ,error){
+func (this *MysqlDBProvider ) CreateTable(tableName string,sqlstr string,primaryKey []string) (sql.Result ,error) {
+   if len(primaryKey) != 0 {
+      sqlstr = sqlstr[0:len(sqlstr)-2] +  ",\n PRIMARY KEY("  + strings.Join(primaryKey,",") + ") );"  
+   }
+   log.Info(sqlstr)
+   return this.db.Exec(sqlstr)
+}
+
+
+func  (this *MysqlDBProvider ) CreatePrimaryKey(tableName string,keyList []string)  (sql.Result ,error) {
+   if len(keyList) != 0 {
+      sqlstr := "ALTER TABLE " + tableName  + " ADD PRIMARY KEY("  + strings.Join(keyList,",") + ")" 
+      log.Info(sqlstr)
+      return this.db.Exec(sqlstr)  
+   }else {
+      return nil,nil
+   }
+}
+
+func (this *MysqlDBProvider ) ExecuteSQL(sql string) (sql.Result ,error){
    log.Info(sql)
    return this.db.Exec(sql)
 }
-
 
 func (this *MysqlDBProvider ) DropTable(tableName string) (sql.Result ,error){
    var sql string = "drop table if exists " + tableName + ";"
@@ -157,26 +189,27 @@ func (this *MysqlDBProvider )  CreateDefaultValue(defaultValue interface{}) stri
 }
 
 
-func (this *MysqlDBProvider ) CreateSqlTypeByLength(sqlType string,length int, scale int) string {
+func (this *MysqlDBProvider ) CreateSqlTypeByLength(auto_increment bool ,sqlType string,length int, scale int) string {
+   result := sqlType
    switch sqlType {
       case "INT","TINYINT","SMALLINT","BIGINT","VARCHAR" :
         if length != 0 {
-          return sqlType + "(" + strconv.Itoa(length)  + ")"
-        }else {
-          return sqlType
+          result = sqlType + "(" + strconv.Itoa(length)  + ")"
         }
       case "FLOAT","DOUBLE":
         if length != 0 && scale != 0 {
-          return sqlType + "(" + strconv.Itoa(length)  + ","  +  strconv.Itoa(scale) + ")"
+          result = sqlType + "(" + strconv.Itoa(length)  + ","  +  strconv.Itoa(scale) + ")"
         } else if scale != 0 {
-          return sqlType + "(" + strconv.Itoa(scale)  + ","  +  strconv.Itoa(scale) + ")"
+          result = sqlType + "(" + strconv.Itoa(scale)  + ","  +  strconv.Itoa(scale) + ")"
         } else if length != 0 {
-          return sqlType + "(" + strconv.Itoa(length)  + ","  +  strconv.Itoa(length) + ")"
-        } else {
-          return sqlType
+          result = sqlType + "(" + strconv.Itoa(length)  + ","  +  strconv.Itoa(length) + ")"
         }
       default:
-        return sqlType
+        result = sqlType
    }
+   if auto_increment {
+     result += " AUTO_INCREMENT "
+   }
+   return result
 }
 

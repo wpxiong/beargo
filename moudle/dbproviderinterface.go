@@ -13,8 +13,13 @@ type DbProviderInterface interface {
    ConnectionDb(dburl string) error 
    Query(sql string) (*sql.Rows ,error)
    Insert(sql string) (sql.Result ,error)
-   CreateTable(sql string) (sql.Result ,error)
+   CreateTable(tableName string , sqlstr string,primaryKey []string) (sql.Result ,error)
    DropTable(tableName string) (sql.Result ,error)
+   ExecuteSQL(sql string) (sql.Result ,error)
+   CreatePrimaryKey(tableName string,keyList []string)  (sql.Result ,error)
+   Begin() (*sql.Tx,error)
+   Close() error
+   Commit(tx *sql.Tx) error
    GetDBIntType() string
    GetDBInt8Type() string
    GetDBInt16Type() string
@@ -32,7 +37,7 @@ type DbProviderInterface interface {
    GetDBBoolType() string
    GetDBStringType() string
    GetDBTimeType() string
-   CreateSqlTypeByLength(sqlType string,length int, scale int) string
+   CreateSqlTypeByLength(auto_increment bool , sqlType string,length int, scale int) string
    CreateDefaultValue(defaultValue interface{}) string
 }
 

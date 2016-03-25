@@ -4,6 +4,7 @@ import (
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/util"
+  "database/sql"
   "reflect"
   "strings"
 )
@@ -35,6 +36,7 @@ type ColumnInfo struct {
   RelationTable *DBTableInfo
   RelationStructName  string
   IsArray       bool
+  AutoIncrement bool
 }
 
 
@@ -47,6 +49,12 @@ type DBTableInfo struct {
   StructName    string
 }
 
+type RelationInfo struct {
+  RelationType string
+  
+
+}
+
 type Moudle struct {
   DbDialect        DbDialectType
   DbName           string
@@ -56,6 +64,7 @@ type Moudle struct {
   DbTableInfo      map[string]DBTableInfo
   DbProiver        DbProviderInterface
   connectionStatus bool
+  RelationInfoList []RelationInfo
 }
 
 
@@ -94,6 +103,7 @@ func (this *Moudle) AddTableWithTableName(dbtable interface{},tableName string){
    this.addTable(dbtable,tableName,"")
 }
 
+
 func (this *Moudle) AddTable(dbtable interface{}){
    this.addTable(dbtable,"","")
 }
@@ -110,26 +120,46 @@ func (this *Moudle) droptable(tablename string) {
    }
 }
 
-func (this *Moudle) createtable(sqlstr string) {
-   _,err := this.DbProiver.CreateTable(sqlstr)
+func (this *Moudle) createtable(tableName,sqlstr string,primaryKey []string) {
+   _,err := this.DbProiver.CreateTable(tableName,sqlstr,primaryKey)
    if err != nil {
       log.Error(err)
    }
 }
+
+
+func (this *Moudle) createPrimaryKey(tableName string,keyList []string) {
+   _,err := this.DbProiver.CreatePrimaryKey(tableName,keyList)
+   if err != nil {
+      log.Error(err)
+   }
+}
+
+
+func (this *Moudle)  createRelation(){
+ 
+ 
+}
+
 
 func (this *Moudle)  InitialDB(create bool) {
   log.Debug("Initial DB start")
   if create {
     //create Table
     var index int = 0
+    tx := this.beginTransaction()
+    if tx == nil {
+       return 
+    }
     for key,Info := range this.DbTableInfo {
       this.droptable(key)
+      primaryKey := make([]string,0,0)
       var create_sql string = "create table " + key + " ( "
       for _,column := range Info.FiledNameMap {
         if column.RelationStructName != "" {
            continue
         }
-        columnstr := column.ColumnName + " " +  this.createSqlTypeByLength(column.SqlType,column.Length,column.Scale)
+        columnstr := column.ColumnName + " " +  this.createSqlTypeByLength(column.AutoIncrement,column.SqlType,column.Length,column.Scale)
         if column.NotNull {
            columnstr += " not null "
         }
@@ -139,12 +169,17 @@ func (this *Moudle)  InitialDB(create bool) {
         columnstr += this.createDefaultValue(column.DefaultValue)
         columnstr += ",\n"
         create_sql += columnstr
+        if column.IsId {
+           primaryKey = append(primaryKey,column.ColumnName)
+        }
         index ++
       }
       create_sql = create_sql[0:len(create_sql)-2]
       create_sql += "\n)"
-      this.createtable(create_sql)
+      this.createtable(key,create_sql,primaryKey)
     }
+    this.createRelation()
+    this.endTransaction(tx)
   }else {
     //check Table is exist in DB
     
@@ -222,10 +257,24 @@ func (this *Moudle)  getDBTimeType() string {
   return this.DbProiver.GetDBTimeType()
 }
 
+func (this *Moudle) beginTransaction() *sql.Tx {
+   tx ,err := this.DbProiver.Begin()
+   if err == nil {
+     return tx
+   }else {
+     log.Error(err)
+     return nil
+   }
+}
 
+func (this *Moudle) endTransaction(tx *sql.Tx) {
+  if err := this.DbProiver.Commit(tx); err != nil {
+    log.Error(err)
+  }
+}
 
-func (this *Moudle)  createSqlTypeByLength(sqltype string, length int,scale int) string {
-  return this.DbProiver.CreateSqlTypeByLength(sqltype,length,scale)
+func (this *Moudle)  createSqlTypeByLength(auto_increment bool,sqltype string, length int,scale int) string {
+  return this.DbProiver.CreateSqlTypeByLength(auto_increment,sqltype,length,scale)
 }
 
 func (this *Moudle)  createDefaultValue(defaultValue interface{}) string {
@@ -246,6 +295,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          columnInfo := ColumnInfo{}
          column_name := field.Tag.Get(constvalue.DB_COLUMN_NAME)
          not_null := field.Tag.Get(constvalue.DB_NOT_NULL)
+         auto_increment := field.Tag.Get(constvalue.DB_AUTO_INCREMENT)
          length := field.Tag.Get(constvalue.DB_LENGTH)
          scale := field.Tag.Get(constvalue.DB_SCALE)
          unique_key := field.Tag.Get(constvalue.DB_UNIQUE_KEY)
@@ -360,6 +410,10 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          
          if strings.ToLower(strings.Trim(id," ")) == "true" {
             columnInfo.IsId = true
+         }
+         
+         if strings.ToLower(strings.Trim(auto_increment," ")) == "true" {
+            columnInfo.AutoIncrement = true
          }
          
          if strings.ToLower(strings.Trim(not_null," ")) == "true" {
