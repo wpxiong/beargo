@@ -35,8 +35,9 @@ type DbProviderInterface interface {
    GetDBComplex64Type() string
    GetDBComplex128Type() string
    GetDBBoolType() string
-   GetDBStringType() string
+   GetDBStringType(length int ) string
    GetDBTimeType() string
+   GetDBByteArrayType(length int ) string
    CreateSqlTypeByLength(auto_increment bool , sqlType string,length int, scale int) string
    CreateDefaultValue(defaultValue interface{}) string
 }

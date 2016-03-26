@@ -139,13 +139,33 @@ func (this *MysqlDBProvider )  GetDBBoolType() string {
   return "CHAR(1)"
 }
 
-func (this *MysqlDBProvider )  GetDBStringType() string {
-  return "VARCHAR"
+func (this *MysqlDBProvider )  GetDBStringType(length int ) string {
+  if length < 65535 {
+     return "VARCHAR"
+  }else if length < 16777215 {
+     return "MEDIUMTEXT"
+  }else {
+     return "LONGTEXT"
+  }
 }
 
 func (this *MysqlDBProvider )  GetDBTimeType() string {
   return "TIMESTAMP"
 }
+
+func (this *MysqlDBProvider )  GetDBByteArrayType(length int) string {
+  if length < 256 {
+     return "TINYBLOB"
+  }else if length < 65536 {
+     return "BLOB"
+  }else if length < 16777216 {
+     return "MEDIUMBLOB"
+  }else {
+     return "LONGBLOB"
+  }
+}
+
+
 
 func (this *MysqlDBProvider )  CreateDefaultValue(defaultValue interface{}) string {
   if defaultValue == nil {

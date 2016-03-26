@@ -79,7 +79,7 @@ const (
   
   DB_RELATION_ONE_TO_MANY = "onetomany"
   DB_RELATION_MANY_TO_ONE = "manytoone"
-  
+  DB_RELATION_ONE_TO_ONE = "onetoone"
   
   DEFAULT_TIME_FORMATE = "2006-01-02 15:04:06"
   

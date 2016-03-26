@@ -5,6 +5,7 @@ import (
   "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/util"
   "database/sql"
+  "errors"
   "reflect"
   "strings"
 )
@@ -27,6 +28,7 @@ type DbRelationType int
 const (
     ONE_TO_MANY   DbRelationType = iota
     MANY_TO_ONE
+    ONE_TO_ONE
 )
 
 
@@ -41,7 +43,6 @@ type ColumnInfo struct {
   DefaultValue  interface{}
   FieldName     string
   FieldType     reflect.Type
-  RelationTable *DBTableInfo
   RelationStructName  string
   IsArray       bool
   AutoIncrement bool
@@ -62,6 +63,7 @@ type RelationInfo struct {
   RelationType DbRelationType
   ColumnName string
   ReferencedColumnName  string
+  StructName    string
 }
 
 type Moudle struct {
@@ -70,7 +72,8 @@ type Moudle struct {
   DbConnectionUrl  string
   DbUserName       string
   DbPassword       string
-  DbTableInfo      map[string]DBTableInfo
+  DbTableInfoByTableName       map[string]*DBTableInfo
+  DbTableInfoByStructName      map[string]*DBTableInfo
   DbProiver        DbProviderInterface
   connectionStatus bool
   RelationInfoList []RelationInfo
@@ -78,13 +81,14 @@ type Moudle struct {
 
 
 func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
-   module :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword}
+   module :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword,RelationInfoList:make([]RelationInfo,0,0)}
    module.initModuleInstance()
    return module
 }
 
 func (this *Moudle) initModuleInstance(){
-   this.DbTableInfo = make(map[string]DBTableInfo)
+   this.DbTableInfoByTableName = make(map[string]*DBTableInfo)
+   this.DbTableInfoByStructName = make(map[string]*DBTableInfo)
    var connectionUrl string  
    switch this.DbDialect {
       case MYSQL :
@@ -146,8 +150,51 @@ func (this *Moudle) createPrimaryKey(tableName string,keyList []string) {
 
 
 func (this *Moudle)  createRelation(){
- 
- 
+   var sqlMap map[string]interface{}  = make(map[string]interface{})
+   for _,info := range this.RelationInfoList {
+      if info.ColumnName == "" || info.ReferencedColumnName == ""{ 
+         continue
+      }
+      if info.RelationType == ONE_TO_MANY {
+         val := sqlMap[info.DbTableName] 
+         var keymap map[string][]string 
+         if val != nil {
+           keymap = val.(map[string][]string)
+         }else {
+           keymap = make(map[string][]string)
+           sqlMap[info.DbTableName] = keymap
+         }
+         foreignInfo := make([]string,0,0)
+         tableInfo := this.DbTableInfoByStructName[info.StructName]
+         _,ok := keymap[info.ColumnName]
+         if tableInfo != nil &&  ok == false {
+           foreignInfo = append(foreignInfo,tableInfo.TableName)
+           foreignInfo = append(foreignInfo,info.ReferencedColumnName)
+           keymap[info.ColumnName] = foreignInfo
+         }
+      }else if info.RelationType == MANY_TO_ONE {
+         tableInfo := this.DbTableInfoByStructName[info.StructName]
+         if tableInfo != nil {
+             val := sqlMap[tableInfo.TableName]
+             var keymap map[string][]string 
+             if val != nil {
+                keymap = val.(map[string][]string)
+             }else {
+                keymap = make(map[string][]string)
+                sqlMap[tableInfo.TableName] = keymap
+             }
+             if _, ok := keymap[info.ReferencedColumnName]; ok == false {
+               foreignInfo := make([]string,0,0)
+               foreignInfo = append(foreignInfo,info.StructName)
+               foreignInfo = append(foreignInfo,info.ColumnName)
+               keymap[info.ReferencedColumnName] = foreignInfo
+             }
+         }
+      }else if info.RelationType == ONE_TO_ONE {
+        
+      }
+   }
+   log.Debug(sqlMap)
 }
 
 
@@ -160,7 +207,7 @@ func (this *Moudle)  InitialDB(create bool) {
     if tx == nil {
        return 
     }
-    for key,Info := range this.DbTableInfo {
+    for key,Info := range this.DbTableInfoByTableName {
       this.droptable(key)
       primaryKey := make([]string,0,0)
       var create_sql string = "create table " + key + " ( "
@@ -258,12 +305,16 @@ func (this *Moudle)  getDBBoolType() string {
   return this.DbProiver.GetDBBoolType()
 }
 
-func (this *Moudle)  getDBStringType() string {
-  return this.DbProiver.GetDBStringType()
+func (this *Moudle)  getDBStringType(length int) string {
+  return this.DbProiver.GetDBStringType(length)
 }
 
 func (this *Moudle)  getDBTimeType() string {
   return this.DbProiver.GetDBTimeType()
+}
+
+func (this *Moudle) getDBByteArrayType(length int ) string {
+  return this.DbProiver.GetDBByteArrayType(length)
 }
 
 func (this *Moudle) beginTransaction() *sql.Tx {
@@ -290,14 +341,35 @@ func (this *Moudle)  createDefaultValue(defaultValue interface{}) string {
   return this.DbProiver.CreateDefaultValue(defaultValue)
 }
 
+func (this *Moudle)  getRelationType(typestr string) (DbRelationType,error) {
+    if typestr == constvalue.DB_RELATION_ONE_TO_MANY {
+       return ONE_TO_MANY,nil
+    } else if typestr == constvalue.DB_RELATION_MANY_TO_ONE {
+       return MANY_TO_ONE,nil
+    }else if typestr == constvalue.DB_RELATION_ONE_TO_ONE {
+       return ONE_TO_ONE,nil
+    }else {
+       return ONE_TO_MANY,errors.New("relation type is must " + constvalue.DB_RELATION_ONE_TO_MANY + " or " + constvalue.DB_RELATION_MANY_TO_ONE)
+    }
+}
+
+
 func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname string){
   if !this.connectionStatus {
      return 
   }else {
      tableInfo := DBTableInfo{}
-     tablenamestr := strings.ToLower(reflect.TypeOf(dbtable).Name())
+     structName := reflect.TypeOf(dbtable).Name()
+     tablenamestr := strings.ToLower(structName)     
      fieldNum := reflect.TypeOf(dbtable).NumField()
      tableInfo.FiledNameMap = make(map[string]ColumnInfo)
+     
+     if tableName == "" {
+       tableInfo.TableName = tablenamestr
+     }else {
+       tableInfo.TableName = tableName
+     }
+     
      for i:=0;i<fieldNum;i++{
          field := reflect.TypeOf(dbtable).Field(i)
          id := field.Tag.Get(constvalue.DB_ID)
@@ -309,6 +381,15 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          scale := field.Tag.Get(constvalue.DB_SCALE)
          unique_key := field.Tag.Get(constvalue.DB_UNIQUE_KEY)
          default_value := field.Tag.Get(constvalue.DB_DEFAULT_VALUE)
+         referenced_column_name := field.Tag.Get(constvalue.DB_REFERENCED_COLUMN_NAME)
+         referenced_type := field.Tag.Get(constvalue.DB_RELATION_TYPE)
+         referenced_column_name = strings.Trim(referenced_column_name," ")
+         referenced_type = strings.Trim(referenced_type," ")
+         
+         if len,err := util.GetIntValue(length); err == nil {
+             columnInfo.Length = int(len)
+         }
+         
          switch field.Type.Kind() {
             case reflect.Int:
               columnInfo.SqlType = this.getDBIntType()
@@ -400,13 +481,18 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
                 columnInfo.IsArray = false
               }
             case reflect.Slice:
-              // foreign key
-              columnInfo.RelationStructName = field.Type.Elem().Name()
-              columnInfo.IsArray = true
+              elemtype := field.Type.Elem().Name()
+              if elemtype == "byte" {
+                columnInfo.SqlType = this.getDBByteArrayType(columnInfo.Length)
+              }else {
+                // foreign key
+                columnInfo.RelationStructName = field.Type.Elem().Name()
+                columnInfo.IsArray = true
+              }
             case reflect.Map:
               continue
             case reflect.String:
-              columnInfo.SqlType = this.getDBStringType()
+              columnInfo.SqlType = this.getDBStringType(columnInfo.Length)
               columnInfo.DefaultValue = default_value
          }
          columnInfo.FieldType = field.Type
@@ -433,27 +519,32 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
              columnInfo.Scale = int(len)
          }
          
-         if len,err := util.GetIntValue(length); err == nil {
-             columnInfo.Length = int(len)
-         }
-         
          if strings.ToLower(strings.Trim(unique_key," ")) == "true" {
             columnInfo.Unique = true
          }
          tableInfo.FiledNameMap[strings.ToLower(field.Name)] = columnInfo
+         
+         if referenced_type  != "" {
+            relation := RelationInfo{ReferencedColumnName:referenced_column_name,DbTableName: tableInfo.TableName,ColumnName:column_name,StructName:columnInfo.RelationStructName}
+            re_type,err := this.getRelationType(referenced_type)
+            if err == nil {
+               relation.RelationType = re_type
+               this.RelationInfoList = append(this.RelationInfoList,relation) 
+            }else {
+               log.Error(err)
+            }
+         }
      }
-     if tableName == "" {
-       tableInfo.TableName = tablenamestr
-     }else {
-       tableInfo.TableName = tableName
-     }
+     
      if schemaname == "" {
        tableInfo.DbSchema = ""
      }else {
        tableInfo.DbSchema = schemaname
      }
      tableInfo.DbStuct = dbtable
-     tableInfo.StructName = tablenamestr
-     this.DbTableInfo[tableInfo.TableName] = tableInfo
+     tableInfo.StructName = structName
+     this.DbTableInfoByTableName[tableInfo.TableName] = &tableInfo
+     this.DbTableInfoByStructName[tableInfo.StructName] = &tableInfo
+     log.Debug(this.RelationInfoList)
   }
 }
