@@ -74,6 +74,13 @@ const (
   DB_DEFAULT_VALUE = "default_value"
   DB_AUTO_INCREMENT = "auto_increment"
   
+  DB_RELATION_TYPE = "relation_type"
+  DB_REFERENCED_COLUMN_NAME = "referenced_column_name"
+  
+  DB_RELATION_ONE_TO_MANY = "onetomany"
+  DB_RELATION_MANY_TO_ONE = "manytoone"
+  
+  
   DEFAULT_TIME_FORMATE = "2006-01-02 15:04:06"
   
 )

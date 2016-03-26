@@ -22,6 +22,14 @@ const (
     POSTGRESQL
 )
 
+type DbRelationType int
+
+const (
+    ONE_TO_MANY   DbRelationType = iota
+    MANY_TO_ONE
+)
+
+
 type ColumnInfo struct {
   ColumnName    string
   NotNull       bool
@@ -50,9 +58,10 @@ type DBTableInfo struct {
 }
 
 type RelationInfo struct {
-  RelationType string
-  
-
+  DbTableName  string
+  RelationType DbRelationType
+  ColumnName string
+  ReferencedColumnName  string
 }
 
 type Moudle struct {
