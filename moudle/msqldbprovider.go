@@ -57,6 +57,12 @@ func (this *MysqlDBProvider ) CreateTable(tableName string,sqlstr string,primary
    return this.db.Exec(sqlstr)
 }
 
+func  (this *MysqlDBProvider ) CreateForeignKey(tableName string ,  keyColumn string, refrenceTableName string, referenceColumnName string) (sql.Result ,error) {
+   foreignkeyname := keyColumn + "_" + refrenceTableName + "_" + referenceColumnName
+   sqlstr := "alter table `" + tableName + "` add constraint `" + foreignkeyname  + "` foreign key (`"  + keyColumn + "`) references `" + refrenceTableName + "` (`" + referenceColumnName + "`) on delete cascade on update cascade "
+   log.Info(sqlstr)
+   return this.db.Exec(sqlstr)
+}
 
 func  (this *MysqlDBProvider ) CreatePrimaryKey(tableName string,keyList []string)  (sql.Result ,error) {
    if len(keyList) != 0 {

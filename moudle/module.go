@@ -49,6 +49,11 @@ type ColumnInfo struct {
 }
 
 
+type ForeignKeyInfo struct {
+  TableName        string
+  KeyColumnName          string
+}
+
 type DBTableInfo struct {
   TableName        string
   DbSchema      string
@@ -137,6 +142,7 @@ func (this *Moudle) createtable(tableName,sqlstr string,primaryKey []string) {
    _,err := this.DbProiver.CreateTable(tableName,sqlstr,primaryKey)
    if err != nil {
       log.Error(err)
+      panic("create table error")
    }
 }
 
@@ -149,6 +155,22 @@ func (this *Moudle) createPrimaryKey(tableName string,keyList []string) {
 }
 
 
+func (this *Moudle) createForeignKey(tableName string , keyColumn string, refrenceTableName string, referenceColumnName string) {
+   _,err := this.DbProiver.CreateForeignKey(tableName,keyColumn,refrenceTableName,referenceColumnName)
+   if err != nil {
+      log.Error(err)
+      panic("create foreign key error")
+   }
+}
+
+func InSlice (arr []ForeignKeyInfo, val ForeignKeyInfo) (bool){
+    for _, v := range(arr) {
+       if v.TableName == val.TableName &&  v.KeyColumnName == val.KeyColumnName  { return true; } 
+    }    
+    return false; 
+}
+
+
 func (this *Moudle)  createRelation(){
    var sqlMap map[string]interface{}  = make(map[string]interface{})
    for _,info := range this.RelationInfoList {
@@ -157,56 +179,84 @@ func (this *Moudle)  createRelation(){
       }
       if info.RelationType == ONE_TO_MANY {
          val := sqlMap[info.DbTableName] 
-         var keymap map[string][]string 
+         var keymap map[string][]ForeignKeyInfo 
          if val != nil {
-           keymap = val.(map[string][]string)
+           keymap = val.(map[string][]ForeignKeyInfo)
          }else {
-           keymap = make(map[string][]string)
+           keymap = make(map[string][]ForeignKeyInfo)
            sqlMap[info.DbTableName] = keymap
          }
-         foreignInfo := make([]string,0,0)
+         foreignInfo := ForeignKeyInfo{}
          tableInfo := this.DbTableInfoByStructName[info.StructName]
-         _,ok := keymap[info.ColumnName]
-         if tableInfo != nil &&  ok == false {
-           foreignInfo = append(foreignInfo,tableInfo.TableName)
-           foreignInfo = append(foreignInfo,info.ReferencedColumnName)
-           keymap[info.ColumnName] = foreignInfo
+         if tableInfo != nil && info.DbTableName != tableInfo.TableName {
+           foreignInfo.TableName = tableInfo.TableName
+           foreignInfo.KeyColumnName = info.ReferencedColumnName
+           if !InSlice(keymap[info.ReferencedColumnName],foreignInfo) {
+              keymap[info.ColumnName] = append(keymap[info.ColumnName],foreignInfo)
+           }
          }
       }else if info.RelationType == MANY_TO_ONE {
          tableInfo := this.DbTableInfoByStructName[info.StructName]
          if tableInfo != nil {
              val := sqlMap[tableInfo.TableName]
-             var keymap map[string][]string 
+             var keymap map[string][]ForeignKeyInfo 
              if val != nil {
-                keymap = val.(map[string][]string)
+                keymap = val.(map[string][]ForeignKeyInfo)
              }else {
-                keymap = make(map[string][]string)
+                keymap = make(map[string][]ForeignKeyInfo)
                 sqlMap[tableInfo.TableName] = keymap
              }
-             if _, ok := keymap[info.ReferencedColumnName]; ok == false {
-               foreignInfo := make([]string,0,0)
-               foreignInfo = append(foreignInfo,info.StructName)
-               foreignInfo = append(foreignInfo,info.ColumnName)
-               keymap[info.ReferencedColumnName] = foreignInfo
+             if info.DbTableName != tableInfo.TableName { 
+               foreignInfo := ForeignKeyInfo{}
+               foreignInfo.TableName = info.DbTableName
+               foreignInfo.KeyColumnName = info.ColumnName
+               if !InSlice(keymap[info.ReferencedColumnName],foreignInfo) {
+                  keymap[info.ReferencedColumnName] = append(keymap[info.ReferencedColumnName],foreignInfo)
+               }
              }
          }
       }else if info.RelationType == ONE_TO_ONE {
-        
+         tableInfo := this.DbTableInfoByStructName[info.StructName]
+         if tableInfo != nil {
+             val := sqlMap[tableInfo.TableName]
+             var keymap map[string][]ForeignKeyInfo 
+             if val != nil {
+                keymap = val.(map[string][]ForeignKeyInfo)
+             }else {
+                keymap = make(map[string][]ForeignKeyInfo)
+                sqlMap[tableInfo.TableName] = keymap
+             }
+             if info.DbTableName != tableInfo.TableName { 
+               foreignInfo := ForeignKeyInfo{}
+               foreignInfo.TableName = info.DbTableName
+               foreignInfo.KeyColumnName = info.ColumnName
+               if !InSlice(keymap[info.ReferencedColumnName],foreignInfo) {
+                  keymap[info.ReferencedColumnName] = append(keymap[info.ReferencedColumnName],foreignInfo)
+               }
+             }
+         }
       }
    }
-   log.Debug(sqlMap)
+   for table,val := range sqlMap {
+      mapforegin :=  val.(map[string][]ForeignKeyInfo) 
+      for columnname,val2 := range mapforegin {
+         for _, info := range val2 {
+            this.createForeignKey(info.TableName,info.KeyColumnName,table,columnname)
+         }
+      }
+   }
 }
-
 
 func (this *Moudle)  InitialDB(create bool) {
   log.Debug("Initial DB start")
   if create {
     //create Table
     var index int = 0
-    tx := this.beginTransaction()
-    if tx == nil {
-       return 
-    }
+    defer func() {
+        if err := recover(); err != nil {
+            log.Error("create database error")
+        }
+    }()
     for key,Info := range this.DbTableInfoByTableName {
       this.droptable(key)
       primaryKey := make([]string,0,0)
@@ -235,7 +285,6 @@ func (this *Moudle)  InitialDB(create bool) {
       this.createtable(key,create_sql,primaryKey)
     }
     this.createRelation()
-    this.endTransaction(tx)
   }else {
     //check Table is exist in DB
     
@@ -500,7 +549,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          if !isEmpty(column_name) {
             columnInfo.ColumnName = column_name
          }else{
-            columnInfo.ColumnName = field.Name
+            columnInfo.ColumnName = strings.ToLower(field.Name)
          }
          
          if strings.ToLower(strings.Trim(id," ")) == "true" {
@@ -545,6 +594,5 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
      tableInfo.StructName = structName
      this.DbTableInfoByTableName[tableInfo.TableName] = &tableInfo
      this.DbTableInfoByStructName[tableInfo.StructName] = &tableInfo
-     log.Debug(this.RelationInfoList)
   }
 }
