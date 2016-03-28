@@ -171,7 +171,7 @@ func InSlice (arr []ForeignKeyInfo, val ForeignKeyInfo) (bool){
 }
 
 
-func (this *Moudle)  createRelation(){
+func (this *Moudle)  createRelation() map[string]interface{} {
    var sqlMap map[string]interface{}  = make(map[string]interface{})
    for _,info := range this.RelationInfoList {
       if info.ColumnName == "" || info.ReferencedColumnName == ""{ 
@@ -237,14 +237,48 @@ func (this *Moudle)  createRelation(){
          }
       }
    }
-   for table,val := range sqlMap {
+   return sqlMap
+}
+
+
+func InSliceTableList (arr []string, val string) (bool){
+    for _, v := range(arr) {
+       if v == val  { return true; } 
+    }    
+    return false; 
+}
+
+func searchTableInRelation(relationMap map[string]interface{},tableName string, tableList *[]string){
+   if val,ok := relationMap[tableName];ok {
       mapforegin :=  val.(map[string][]ForeignKeyInfo) 
-      for columnname,val2 := range mapforegin {
+      for _,val2 := range mapforegin {
          for _, info := range val2 {
-            this.createForeignKey(info.TableName,info.KeyColumnName,table,columnname)
+            if !InSliceTableList(*tableList,info.TableName) {
+               searchTableInRelation(relationMap,info.TableName,tableList)
+            }
          }
       }
+   }else {
+      if !InSliceTableList(*tableList,tableName) {
+        (*tableList) = append(*tableList,tableName)
+      }
    }
+}
+
+func (this *Moudle) sortTable(relationMap map[string]interface{}) []*DBTableInfo {
+   sortMap := make([]*DBTableInfo,0,0)
+   tableList := make([]string,0,0)
+   for _,Info := range this.DbTableInfoByTableName {
+      searchTableInRelation(relationMap,Info.TableName,&tableList)
+      if !InSliceTableList(tableList,Info.TableName) {
+        tableList = append(tableList,Info.TableName)
+      }
+   }
+   
+   for _,table := range tableList {
+     sortMap = append(sortMap,this.DbTableInfoByTableName[table])
+   }
+   return sortMap
 }
 
 func (this *Moudle)  InitialDB(create bool) {
@@ -256,11 +290,13 @@ func (this *Moudle)  InitialDB(create bool) {
         if err := recover(); err != nil {
             log.Error("create database error")
         }
-    }()
-    for key,Info := range this.DbTableInfoByTableName {
-      this.droptable(key)
+    }() 
+    sqlMap := this.createRelation()
+    sorttablemap := this.sortTable(sqlMap)
+    for _,Info := range sorttablemap {
+      this.droptable(Info.TableName)
       primaryKey := make([]string,0,0)
-      var create_sql string = "create table " + key + " ( "
+      var create_sql string = "create table " + Info.TableName + " ( "
       for _,column := range Info.FiledNameMap {
         if column.RelationStructName != "" {
            continue
@@ -282,9 +318,9 @@ func (this *Moudle)  InitialDB(create bool) {
       }
       create_sql = create_sql[0:len(create_sql)-2]
       create_sql += "\n)"
-      this.createtable(key,create_sql,primaryKey)
+      this.createtable(Info.TableName,create_sql,primaryKey)
     }
-    this.createRelation()
+    //this.createForeignKeyByRelation(sqlMap)
   }else {
     //check Table is exist in DB
     
@@ -292,6 +328,16 @@ func (this *Moudle)  InitialDB(create bool) {
 }
 
 
+func (this *Moudle)  createForeignKeyByRelation(sqlMap map[string]interface{}) {
+   for table,val := range sqlMap {
+      mapforegin :=  val.(map[string][]ForeignKeyInfo) 
+      for columnname,val2 := range mapforegin {
+         for _, info := range val2 {
+            this.createForeignKey(info.TableName,info.KeyColumnName,table,columnname)
+         }
+      }
+   }
+}
 
 func (this *Moudle)  getDBIntType() string {
    return this.DbProiver.GetDBIntType()
@@ -416,7 +462,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
      if tableName == "" {
        tableInfo.TableName = tablenamestr
      }else {
-       tableInfo.TableName = tableName
+       tableInfo.TableName = strings.ToLower(tableName) 
      }
      
      for i:=0;i<fieldNum;i++{
