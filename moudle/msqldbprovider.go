@@ -171,7 +171,9 @@ func (this *MysqlDBProvider )  GetDBByteArrayType(length int) string {
   }
 }
 
-
+func (this *MysqlDBProvider )  LimitSql( limit int ) string {
+   return " LIMIT "  + strconv.Itoa(limit)
+}
 
 func (this *MysqlDBProvider )  CreateDefaultValue(defaultValue interface{}) string {
   if defaultValue == nil {

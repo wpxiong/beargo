@@ -21,6 +21,7 @@ type DbProviderInterface interface {
    Begin() (*sql.Tx,error)
    Close() error
    Commit(tx *sql.Tx) error
+   LimitSql(limit int) string
    GetDBIntType() string
    GetDBInt8Type() string
    GetDBInt16Type() string
