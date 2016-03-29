@@ -82,6 +82,7 @@ type Moudle struct {
   DbProiver        DbProviderInterface
   connectionStatus bool
   RelationInfoList []RelationInfo
+  RelationMap      map[string]interface{}
 }
 
 
@@ -292,6 +293,7 @@ func (this *Moudle)  InitialDB(create bool) {
         }
     }() 
     sqlMap := this.createRelation()
+    this.RelationMap = sqlMap
     sorttablemap := this.sortTable(sqlMap)
     for _,Info := range sorttablemap {
       this.droptable(Info.TableName)
