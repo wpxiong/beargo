@@ -29,6 +29,7 @@ type QueryInfo struct {
   tableInfo  *DBTableInfo
   fetchtype  FetchType
   fetchjointable []string
+  structNameList []string
   moudle   *Moudle
 }
 
@@ -56,6 +57,7 @@ func (this *QueryInfo) GetOneResult() interface{} {
    var rows *sql.Rows
    var err error
    rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
+   defer rows.Close()
    if err != nil {
       log.Error(err)
       panic("SQL :[" + this.sqlQuery + "] query error")
@@ -65,16 +67,46 @@ func (this *QueryInfo) GetOneResult() interface{} {
    return res
 }
 
+func (this *Moudle) listField(list *[]interface{},tableInfo *DBTableInfo,obj interface{},typeVal reflect.Type) {
+   for _,fieldName := range tableInfo.FieldList {
+      val := tableInfo.FiledNameMap[fieldName]
+      if val.RelationStructName == "" {
+         value,_ := typeVal.FieldByName(val.FieldName)
+         fieldVal := reflect.ValueOf(obj).FieldByIndex(value.Index).Interface()
+         (*list) = append(*list,&fieldVal)
+      }
+   }
+}
+
+
 func (this *QueryInfo) GetResultList() []interface{} {
    res := make([]interface{},0,0)
    var rows *sql.Rows
    var err error
    rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
+   defer rows.Close()
    if err != nil {
       log.Error(err)
       panic("SQL :[" + this.sqlQuery + "] query error")
    }else {
-      log.Debug(rows)
+      for rows.Next() {
+          objtype := reflect.TypeOf(this.structObj)
+          structObj := reflect.New(objtype).Elem().Interface()
+          var joinStructObj []interface{} = make([]interface{},0,0)
+          var columnObj []interface{} = make([]interface{},0,0)
+          this.moudle.listField(&columnObj,this.tableInfo,structObj,objtype)
+          for _,table_Name := range this.fetchjointable {
+             info := this.moudle.DbTableInfoByTableName[table_Name]
+             joinObjtype := reflect.TypeOf(info.DbStuct)
+             joinObj := reflect.New(joinObjtype).Elem().Interface()
+             joinStructObj = append(joinStructObj,joinObj)
+             this.moudle.listField(&columnObj,info,joinObj,joinObjtype)
+          }
+          if err := rows.Scan(columnObj...) ;err != nil {
+            panic(err)
+          }
+          res = append(res,structObj)
+      }
    }
    return res
 }
@@ -127,6 +159,8 @@ func (this *QueryInfo) createJoinSql(structName []string) string {
          tableName := this.moudle.DbTableInfoByStructName[struct_name].TableName
          if joinstr,ok := this.moudle.createJoinSqlString(this.tableInfo.TableName,tableName,index) ; ok {
              tableName := this.moudle.DbTableInfoByStructName[struct_name].TableName
+             this.fetchjointable = append(this.fetchjointable,tableName)
+             this.structNameList = append(this.structNameList,name)
              sql = sql + " left join " + tableName  + " T"  + strconv.Itoa(index) + " on " + joinstr
          }else{ 
            panic("create join condition error type : " + struct_name)
@@ -218,7 +252,7 @@ func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{}) []st
 
 func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []string) QueryInfo {
    var table_info *DBTableInfo = nil
-   info := QueryInfo{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:fetchType,moudle:this}
+   info := QueryInfo{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:fetchType,moudle:this,structNameList:make([]string,0,0)}
    defer func() {
       if err := recover(); err != nil {
          log.Error(err)
@@ -244,7 +278,8 @@ func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []
         info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 " + info.createJoinSql(structName)
       }else {
         info.tableInfo = val
-        info.sqlQuery = "select * from " + info.tableInfo.TableName
+        columnlist := this.listTableColumn(info.tableInfo,1)
+        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 "
       }
    }else {
      log.Error("not found the table relation with struct :" + struct_Name)
@@ -255,7 +290,7 @@ func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []
 
 func (this *Moudle) SimpleQuery(tableObj interface{}) QueryInfo {
    var table_info *DBTableInfo = nil
-   info := QueryInfo{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this}
+   info := QueryInfo{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this,structNameList:make([]string,0,0)}
    structName := reflect.TypeOf(tableObj).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       info.tableInfo = val

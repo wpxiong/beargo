@@ -47,5 +47,7 @@ type DbProviderInterface interface {
    GetInsertDBComplex64Sql(val complex128 ) string
    GetInsertDBComplex128Sql(val complex128 ) string
    GetInsertDBTimeSql(time.Time) string
+   SetMaxConnection(max int)
+   SetMinConnection(max int)
 }
 

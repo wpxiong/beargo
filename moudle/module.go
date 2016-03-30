@@ -108,6 +108,8 @@ func (this *Moudle) initModuleInstance(){
       log.Error("DB Connection Error!")
    }else {
       this.connectionStatus = true
+      this.DbProiver.SetMinConnection(constvalue.DEFAULT_MIN_DB_CONNECTION)
+      this.DbProiver.SetMaxConnection(constvalue.DEFAULT_MAX_DB_CONNECTION)
    }
 }
 

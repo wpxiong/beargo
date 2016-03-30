@@ -2,6 +2,7 @@ package moudle
 
 import (
   "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/constvalue"
   "database/sql"
   "strconv"
   "strings"
@@ -18,6 +19,13 @@ type MysqlDBProvider struct {
    db *sql.DB
 }
 
+func (this *MysqlDBProvider )  SetMinConnection(max int) {
+   this.db.SetMaxIdleConns(max)
+}
+
+func (this *MysqlDBProvider )  SetMaxConnection(max int) {
+   this.db.SetMaxOpenConns(max)
+}
 
 func (this *MysqlDBProvider ) Begin() (*sql.Tx,error) {
    return this.db.Begin()
@@ -161,7 +169,7 @@ func (this *MysqlDBProvider ) GetInsertDBComplex128Sql(val complex128 ) string {
 }
 
 func (this *MysqlDBProvider )    GetInsertDBTimeSql(ti time.Time) string {
-   return "'" + ti.Format("2006-12-11 00:00:00") + "'"
+   return "'" + ti.Format(constvalue.DEFAULT_TIME_FORMATE) + "'"
 }
 
    
