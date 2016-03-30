@@ -6,6 +6,7 @@ import (
   "strconv"
   "strings"
   "reflect"
+  "time"
   _ "github.com/go-sql-driver/mysql"
 )
 
@@ -145,6 +146,19 @@ func (this *MysqlDBProvider )  GetDBBoolType() string {
   return "CHAR(1)"
 }
 
+func (this *MysqlDBProvider ) GetInsertDBComplex64Sql(val complex128 ) string {
+  return "'" + strconv.FormatFloat(real(val),'f', -1, 32) +"," + strconv.FormatFloat(imag(val),'f', -1, 32) + "'"
+}
+
+func (this *MysqlDBProvider ) GetInsertDBComplex128Sql(val complex128 ) string {
+   return "'" + strconv.FormatFloat(real(val),'f', -1, 64) +"," + strconv.FormatFloat(imag(val),'f', -1, 64) + "'"
+}
+
+func (this *MysqlDBProvider )    GetInsertDBTimeSql(ti time.Time) string {
+   return "'" + ti.Format("2006-12-11 00:00:00") + "'"
+}
+
+   
 func (this *MysqlDBProvider )  GetDBStringType(length int ) string {
   if length < 65535 {
      return "VARCHAR"

@@ -4,6 +4,7 @@ import (
   "github.com/wpxiong/beargo/log"
   "reflect"
   "strings"
+  "time"
   "strconv"
   "database/sql"
 )
@@ -34,7 +35,14 @@ type QueryInfo struct {
 type  DbQuery interface {
    Query(tableObj interface{},fetchType FetchType,structName []string) QueryInfo
    SimpleQuery(tableObj interface{}) QueryInfo
+   Insert(structVal interface{} )
+   Update(structVal interface{} )
+   UpdateWithField(structVal interface{},fieldName[]string )
+   InsertWithSql(sql string,parameter []interface{})
+   UpdateWithSql(sql string,parameter []interface{})
+   ExecuteWithSql(sql string,parameter []interface{})
 }
+
 
 type DbQueryInfo interface {
    Limit(limit int) *QueryInfo
@@ -133,12 +141,79 @@ func (this *QueryInfo) createJoinSql(structName []string) string {
 
 func (this *Moudle) listTableColumn(tableinfo *DBTableInfo,index int) []string {
    columnList := make([]string,0,0)
-   for _,val := range tableinfo.FiledNameMap {
+   for _,fieldName := range tableinfo.FieldList {
+      val := tableinfo.FiledNameMap[fieldName]
       if val.RelationStructName == "" {
          columnList = append(columnList,"T" + strconv.Itoa(index) + "." + val.ColumnName )
       }
    }
    return columnList
+}
+
+func (this *Moudle) listColumn(tableinfo *DBTableInfo) []string {
+   columnList := make([]string,0,0)
+   for _,fieldName := range tableinfo.FieldList {
+      val := tableinfo.FiledNameMap[fieldName]
+      if val.RelationStructName == "" && val.AutoIncrement == false {
+         columnList = append(columnList,val.ColumnName)
+      }
+   }
+   return columnList
+}
+
+func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{}) []string {
+   valueList := make([]string,0,0)
+   for _,fieldName := range tableinfo.FieldList {
+      val := tableinfo.FiledNameMap[fieldName]
+      if val.RelationStructName == "" && val.AutoIncrement == false {
+         value := reflect.ValueOf(structVal).FieldByName(val.FieldName)
+         var valstr string
+         switch val.FieldType.Kind(){
+            case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+              valstr = strconv.FormatInt(value.Int(),10)
+            case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+              valstr = strconv.FormatUint(value.Uint(), 10)
+            case reflect.Uintptr:
+              continue
+            case reflect.Float32,reflect.Float64:
+              valstr = strconv.FormatFloat(value.Float(),'f', -1, 64)
+            case reflect.Complex64:
+              valstr = this.DbProiver.GetInsertDBComplex64Sql(value.Complex())
+            case reflect.Complex128:
+              valstr = this.DbProiver.GetInsertDBComplex128Sql(value.Complex())
+            case reflect.Array:
+              continue
+            case reflect.Bool:
+               if value.Bool() {
+                 valstr = "'1'"
+               }else {
+                 valstr = "'0'"
+               }
+            case reflect.Ptr:
+              continue
+            case reflect.Struct:
+              if val.FieldType.Name() == "Time" {
+                ti := value.Interface().(time.Time)
+                valstr = this.DbProiver.GetInsertDBTimeSql(ti)
+              }else {
+                continue
+              }
+            case reflect.Slice:
+              elemtype := val.FieldType.Elem().Name()
+              if elemtype == "byte" {
+                
+              }else {
+                continue
+              }
+            case reflect.Map:
+              continue
+            case reflect.String:
+              valstr = "'" + value.String() + "'"
+         }
+         valueList = append(valueList,valstr )
+      }
+   }
+   return valueList
 }
 
 func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []string) QueryInfo {
@@ -189,4 +264,40 @@ func (this *Moudle) SimpleQuery(tableObj interface{}) QueryInfo {
      log.Error("not found the table relation with struct :" + structName)
    }
    return info
+}
+
+func (this *Moudle) Insert(structVal interface{} ) {
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      var valuelist []string = this.listValue(val,structVal)
+      var columnlist []string = this.listColumn(val) 
+      sqlstr := "insert into " + val.TableName + "(" + strings.Join(columnlist,",") + ") values (" +  strings.Join(valuelist,",")  +");"
+      if _,err := this.DbProiver.Insert(sqlstr); err != nil {
+         panic(err)
+      }
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+}
+
+
+func (this *Moudle) Update(structVal interface{} ) {
+
+}
+
+
+func (this *Moudle) UpdateWithField(structVal interface{},fieldName[]string ) {
+
+}
+
+func (this *Moudle) InsertWithSql(sql string,parameter []interface{})  {
+
+}
+
+func (this *Moudle) UpdateWithSql(sql string,parameter []interface{}) {
+
+}
+
+func (this *Moudle) ExecuteWithSql(sql string,parameter []interface{}) {
+
 }

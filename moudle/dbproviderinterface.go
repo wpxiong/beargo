@@ -3,6 +3,7 @@ package moudle
 import (
   "github.com/wpxiong/beargo/log"
   "database/sql"
+  "time"
 )
 
 func init() {
@@ -42,5 +43,8 @@ type DbProviderInterface interface {
    GetDBByteArrayType(length int ) string
    CreateSqlTypeByLength(auto_increment bool , sqlType string,length int, scale int) string
    CreateDefaultValue(defaultValue interface{}) string
+   GetInsertDBComplex64Sql(val complex128 ) string
+   GetInsertDBComplex128Sql(val complex128 ) string
+   GetInsertDBTimeSql(time.Time) string
 }
 
