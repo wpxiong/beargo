@@ -6,6 +6,7 @@ import (
   "strconv"
   "strings"
   "reflect"
+  "time"
   _ "github.com/go-sql-driver/mysql"
 )
 
@@ -79,6 +80,12 @@ func (this *MysqlDBProvider ) ExecuteSQL(sql string) (sql.Result ,error){
    return this.db.Exec(sql)
 }
 
+func (this *MysqlDBProvider ) Update(sql string) (sql.Result ,error){
+   log.Info(sql)
+   return this.db.Exec(sql)
+}
+
+
 func (this *MysqlDBProvider ) DropTable(tableName string) (sql.Result ,error){
    var sql string = "drop table if exists " + tableName + ";"
    log.Info(sql)
@@ -145,6 +152,19 @@ func (this *MysqlDBProvider )  GetDBBoolType() string {
   return "CHAR(1)"
 }
 
+func (this *MysqlDBProvider ) GetInsertDBComplex64Sql(val complex128 ) string {
+  return "'" + strconv.FormatFloat(real(val),'f', -1, 32) +"," + strconv.FormatFloat(imag(val),'f', -1, 32) + "'"
+}
+
+func (this *MysqlDBProvider ) GetInsertDBComplex128Sql(val complex128 ) string {
+   return "'" + strconv.FormatFloat(real(val),'f', -1, 64) +"," + strconv.FormatFloat(imag(val),'f', -1, 64) + "'"
+}
+
+func (this *MysqlDBProvider )    GetInsertDBTimeSql(ti time.Time) string {
+   return "'" + ti.Format("2006-12-11 00:00:00") + "'"
+}
+
+   
 func (this *MysqlDBProvider )  GetDBStringType(length int ) string {
   if length < 65535 {
      return "VARCHAR"
@@ -171,7 +191,9 @@ func (this *MysqlDBProvider )  GetDBByteArrayType(length int) string {
   }
 }
 
-
+func (this *MysqlDBProvider )  LimitSql( limit int ) string {
+   return " LIMIT "  + strconv.Itoa(limit)
+}
 
 func (this *MysqlDBProvider )  CreateDefaultValue(defaultValue interface{}) string {
   if defaultValue == nil {

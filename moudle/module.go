@@ -59,6 +59,7 @@ type DBTableInfo struct {
   DbSchema      string
   DbStuct       interface{}
   FiledNameMap  map[string] ColumnInfo
+  FieldList      []string
   DbTableExist  bool
   StructName    string
 }
@@ -82,6 +83,7 @@ type Moudle struct {
   DbProiver        DbProviderInterface
   connectionStatus bool
   RelationInfoList []RelationInfo
+  RelationMap      map[string]interface{}
 }
 
 
@@ -292,6 +294,7 @@ func (this *Moudle)  InitialDB(create bool) {
         }
     }() 
     sqlMap := this.createRelation()
+    this.RelationMap = sqlMap
     sorttablemap := this.sortTable(sqlMap)
     for _,Info := range sorttablemap {
       this.droptable(Info.TableName)
@@ -458,7 +461,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
      tablenamestr := strings.ToLower(structName)     
      fieldNum := reflect.TypeOf(dbtable).NumField()
      tableInfo.FiledNameMap = make(map[string]ColumnInfo)
-     
+     tableInfo.FieldList = make([]string,0,0)
      if tableName == "" {
        tableInfo.TableName = tablenamestr
      }else {
@@ -618,7 +621,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
             columnInfo.Unique = true
          }
          tableInfo.FiledNameMap[strings.ToLower(field.Name)] = columnInfo
-         
+         tableInfo.FieldList = append(tableInfo.FieldList,strings.ToLower(field.Name))
          if referenced_type  != "" {
             relation := RelationInfo{ReferencedColumnName:referenced_column_name,DbTableName: tableInfo.TableName,ColumnName:column_name,StructName:columnInfo.RelationStructName}
             re_type,err := this.getRelationType(referenced_type)
