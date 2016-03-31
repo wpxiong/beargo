@@ -52,9 +52,11 @@ type DbQueryInfo interface {
 }
 
 
-func (this *QueryInfo) GetOneResult() interface{} {
-   var res interface{}
+func (this *QueryInfo) GetOneResult() (interface{},bool) {
+   var res []interface{}
    var rows *sql.Rows
+   var result interface{}
+   vallist := make([]reflect.Value,0,0)
    var err error
    rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
    defer rows.Close()
@@ -62,9 +64,14 @@ func (this *QueryInfo) GetOneResult() interface{} {
       log.Error(err)
       panic("SQL :[" + this.sqlQuery + "] query error")
    }else {
-      log.Debug(rows)
+      this.processSelect(rows,&vallist)
+      res = this.processValueToInterface(&vallist)
    }
-   return res
+   if len(res) > 0 {
+      return res[0],true
+   }else {
+      return result,false
+   }
 }
 
 func (this *Moudle) listField(list *[]interface{},tableInfo *DBTableInfo,obj *reflect.Value,typeVal reflect.Type) {
@@ -104,18 +111,17 @@ func (this *Moudle) checkInList(obj reflect.Value,list [] reflect.Value,tableinf
    return false,nil
 }
 
-func (this *QueryInfo) GetResultList() []interface{} {
+
+func (this *QueryInfo) processValueToInterface(valueList *[]reflect.Value) []interface{} {
    res := make([]interface{},0,0)
-   vallist := make([]reflect.Value,0,0)
-   var rows *sql.Rows
-   var err error
-   rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
-   defer rows.Close()
-   if err != nil {
-      log.Error(err)
-      panic("SQL :[" + this.sqlQuery + "] query error")
-   }else {
-      for rows.Next() {
+   for _,val := range *valueList{
+      res = append(res,val.Elem().Interface())
+   }
+   return res
+}
+
+func (this *QueryInfo) processSelect(rows *sql.Rows,vallist *[]reflect.Value) {
+     for rows.Next() {
           objtype := reflect.TypeOf(this.structObj)
           structObj := reflect.New(objtype)
           var joinStructObj []reflect.Value = make([]reflect.Value,0,0)
@@ -136,7 +142,7 @@ func (this *QueryInfo) GetResultList() []interface{} {
           if err := rows.Scan(columnObj...) ;err != nil {
             panic(err)
           }
-          if ok, objVal := this.moudle.checkInList(structObj,vallist,this.tableInfo); ok {
+          if ok, objVal := this.moudle.checkInList(structObj,*vallist,this.tableInfo); ok {
               structObj = *objVal
               for k,joinObj :=  range joinStructObj {
                 columnInfo := this.tableInfo.FiledNameMap[strings.ToLower(this.structNameList[k])]
@@ -157,11 +163,24 @@ func (this *QueryInfo) GetResultList() []interface{} {
                    nestedObj.Set(joinObj.Elem())
                 }
              }
-             vallist = append(vallist,structObj)
+             *vallist = append(*vallist,structObj)
           }
       }
+}
+
+func (this *QueryInfo) GetResultList() []interface{} {
+   vallist := make([]reflect.Value,0,0)
+   var rows *sql.Rows
+   var err error
+   rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
+   defer rows.Close()
+   if err != nil {
+      log.Error(err)
+      panic("SQL :[" + this.sqlQuery + "] query error")
+   }else {
+      this.processSelect(rows,&vallist)
+      return this.processValueToInterface(&vallist)
    }
-   return res
 }
 
 func (this *QueryInfo) Limit(limit int) *QueryInfo {

@@ -50,5 +50,6 @@ type DbProviderInterface interface {
    SetMaxConnection(max int)
    SetMinConnection(max int)
    AppendScanComplexField(list *[]interface{})
+   TableExistsInDB(tableName string) (bool,error)
 }
 

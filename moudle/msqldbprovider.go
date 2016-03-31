@@ -178,6 +178,17 @@ func (this *MysqlDBProvider )   AppendScanComplexField(list *[]interface{}) {
 }
 
    
+func (this *MysqlDBProvider )  TableExistsInDB(tableName string) (bool,error) {
+   var sql string = "show tables like '" + tableName + "';"
+   log.Info(sql)
+   rows,err := this.db.Query(sql)
+   if err != nil {
+      return false,err
+   }else {
+      return rows.Next(),err
+   }
+}
+   
 func (this *MysqlDBProvider )  GetDBStringType(length int ) string {
   if length < 65535 {
      return "VARCHAR"
