@@ -67,20 +67,46 @@ func (this *QueryInfo) GetOneResult() interface{} {
    return res
 }
 
-func (this *Moudle) listField(list *[]interface{},tableInfo *DBTableInfo,obj interface{},typeVal reflect.Type) {
+func (this *Moudle) listField(list *[]interface{},tableInfo *DBTableInfo,obj *reflect.Value,typeVal reflect.Type) {
    for _,fieldName := range tableInfo.FieldList {
       val := tableInfo.FiledNameMap[fieldName]
       if val.RelationStructName == "" {
-         value,_ := typeVal.FieldByName(val.FieldName)
-         fieldVal := reflect.ValueOf(obj).FieldByIndex(value.Index).Interface()
-         (*list) = append(*list,&fieldVal)
+         fieldVal := (*obj).Elem().FieldByName(val.FieldName).Addr().Interface()
+         switch val.FieldType.Kind() {
+            case reflect.Complex64,reflect.Complex128:
+               this.DbProiver.AppendScanComplexField(list)
+            case reflect.Bool:
+               var boolVield string
+               (*list) = append(*list,&boolVield)
+            default:
+               (*list) = append(*list,fieldVal)
+         }
       }
    }
 }
 
 
+func (this *Moudle) checkInList(obj reflect.Value,list [] reflect.Value,tableinfo * DBTableInfo) (bool, *reflect.Value) {
+   for _,val := range list{
+      var theSame bool = true
+      for _,keyIndex := range tableinfo.KeyFieldIndex {
+        fieldVal1 := reflect.ValueOf(obj.Elem().Interface()).Field(keyIndex).Interface()
+        fieldVal2 := reflect.ValueOf(val.Elem().Interface()).Field(keyIndex).Interface()
+        if fieldVal1 != fieldVal2 {
+           theSame = false
+           break
+        }
+     }
+     if theSame {
+        return true,&val
+     }
+   }
+   return false,nil
+}
+
 func (this *QueryInfo) GetResultList() []interface{} {
    res := make([]interface{},0,0)
+   vallist := make([]reflect.Value,0,0)
    var rows *sql.Rows
    var err error
    rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
@@ -91,21 +117,48 @@ func (this *QueryInfo) GetResultList() []interface{} {
    }else {
       for rows.Next() {
           objtype := reflect.TypeOf(this.structObj)
-          structObj := reflect.New(objtype).Elem().Interface()
-          var joinStructObj []interface{} = make([]interface{},0,0)
+          structObj := reflect.New(objtype)
+          var joinStructObj []reflect.Value = make([]reflect.Value,0,0)
           var columnObj []interface{} = make([]interface{},0,0)
-          this.moudle.listField(&columnObj,this.tableInfo,structObj,objtype)
-          for _,table_Name := range this.fetchjointable {
+          this.moudle.listField(&columnObj,this.tableInfo,&structObj,objtype)
+          for index,table_Name := range this.fetchjointable {
              info := this.moudle.DbTableInfoByTableName[table_Name]
              joinObjtype := reflect.TypeOf(info.DbStuct)
-             joinObj := reflect.New(joinObjtype).Elem().Interface()
+             joinObj := reflect.New(joinObjtype)
              joinStructObj = append(joinStructObj,joinObj)
-             this.moudle.listField(&columnObj,info,joinObj,joinObjtype)
+             this.moudle.listField(&columnObj,info,&joinObj,joinObjtype)
+             columnInfo := this.tableInfo.FiledNameMap[strings.ToLower(this.structNameList[index])]
+             if columnInfo.IsArray {
+               nestedObj := structObj.Elem().FieldByName(this.structNameList[index])
+               nestedObj.SetLen(0)
+             }
           }
           if err := rows.Scan(columnObj...) ;err != nil {
             panic(err)
           }
-          res = append(res,structObj)
+          if ok, objVal := this.moudle.checkInList(structObj,vallist,this.tableInfo); ok {
+              structObj = *objVal
+              for k,joinObj :=  range joinStructObj {
+                columnInfo := this.tableInfo.FiledNameMap[strings.ToLower(this.structNameList[k])]
+                nestedObj := structObj.Elem().FieldByName(this.structNameList[k])
+                if columnInfo.IsArray {
+                   nestedObj.Set(reflect.Append(nestedObj,joinObj.Elem()))
+                }else {
+                   nestedObj.Set(joinObj.Elem())
+                }
+             }
+          }else {
+             for k,joinObj :=  range joinStructObj {
+                columnInfo := this.tableInfo.FiledNameMap[strings.ToLower(this.structNameList[k])]
+                nestedObj := structObj.Elem().FieldByName(this.structNameList[k])
+                if columnInfo.IsArray {
+                   nestedObj.Set(reflect.Append(nestedObj,joinObj.Elem()))
+                }else {
+                   nestedObj.Set(joinObj.Elem())
+                }
+             }
+             vallist = append(vallist,structObj)
+          }
       }
    }
    return res

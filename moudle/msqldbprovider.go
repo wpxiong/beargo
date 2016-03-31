@@ -168,8 +168,13 @@ func (this *MysqlDBProvider ) GetInsertDBComplex128Sql(val complex128 ) string {
    return "'" + strconv.FormatFloat(real(val),'f', -1, 64) +"," + strconv.FormatFloat(imag(val),'f', -1, 64) + "'"
 }
 
-func (this *MysqlDBProvider )    GetInsertDBTimeSql(ti time.Time) string {
+func (this *MysqlDBProvider )   GetInsertDBTimeSql(ti time.Time) string {
    return "'" + ti.Format(constvalue.DEFAULT_TIME_FORMATE) + "'"
+}
+
+func (this *MysqlDBProvider )   AppendScanComplexField(list *[]interface{}) {
+    var complexField string 
+    (*list) = append(*list,&complexField)
 }
 
    

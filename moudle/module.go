@@ -62,6 +62,7 @@ type DBTableInfo struct {
   FieldList      []string
   DbTableExist  bool
   StructName    string
+  KeyFieldIndex []int
 }
 
 type RelationInfo struct {
@@ -99,7 +100,7 @@ func (this *Moudle) initModuleInstance(){
    var connectionUrl string  
    switch this.DbDialect {
       case MYSQL :
-        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName;
+        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName + "?parseTime=true"
         this.DbProiver = &MysqlDBProvider{}
       case POSTGRESQL :
    }
@@ -463,6 +464,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
      tablenamestr := strings.ToLower(structName)     
      fieldNum := reflect.TypeOf(dbtable).NumField()
      tableInfo.FiledNameMap = make(map[string]ColumnInfo)
+     tableInfo.KeyFieldIndex = make([]int,0,0)
      tableInfo.FieldList = make([]string,0,0)
      if tableName == "" {
        tableInfo.TableName = tablenamestr
@@ -605,6 +607,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          
          if strings.ToLower(strings.Trim(id," ")) == "true" {
             columnInfo.IsId = true
+            tableInfo.KeyFieldIndex = append(tableInfo.KeyFieldIndex,i)
          }
          
          if strings.ToLower(strings.Trim(auto_increment," ")) == "true" {

@@ -49,5 +49,6 @@ type DbProviderInterface interface {
    GetInsertDBTimeSql(time.Time) string
    SetMaxConnection(max int)
    SetMinConnection(max int)
+   AppendScanComplexField(list *[]interface{})
 }
 
