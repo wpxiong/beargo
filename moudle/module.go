@@ -295,18 +295,23 @@ func (this *Moudle)  TableExistsInDB(tableName string) bool{
 }
 
 func (this *Moudle)  InitialDB(create bool) {
-    log.Debug("Initial DB start")
-    //create Table
-    var index int = 0
-    defer func() {
-        if err := recover(); err != nil {
-            log.Error("create database error")
-        }
-    }() 
-    sqlMap := this.createRelation()
-    this.RelationMap = sqlMap
-    sorttablemap := this.sortTable(sqlMap)
-    for _,Info := range sorttablemap {
+   log.Debug("Initial DB start")
+   var index int = 0
+   defer func() {
+      if err := recover(); err != nil {
+          log.Error("create database error")
+       }
+   }() 
+   sqlMap := this.createRelation()
+   this.RelationMap = sqlMap
+   sorttablemap := this.sortTable(sqlMap)
+   if create {
+      for _,Info := range sorttablemap {
+         this.droptable(Info.TableName)
+      }
+   }
+   
+   for _,Info := range sorttablemap {
       primaryKey := make([]string,0,0)
       var create_sql string = "create table " + Info.TableName + " ( "
       for _,column := range Info.FiledNameMap {
@@ -329,17 +334,16 @@ func (this *Moudle)  InitialDB(create bool) {
         index ++
       }
       if create {
-         this.droptable(Info.TableName)
-         create_sql = create_sql[0:len(create_sql)-2]
-         create_sql += "\n)"
-         this.createtable(Info.TableName,create_sql,primaryKey)
+        create_sql = create_sql[0:len(create_sql)-2]
+        create_sql += "\n)"
+        this.createtable(Info.TableName,create_sql,primaryKey)
       }else if !this.TableExistsInDB(Info.TableName){  
-         create_sql = create_sql[0:len(create_sql)-2]
-         create_sql += "\n)"
-         this.createtable(Info.TableName,create_sql,primaryKey)
+        create_sql = create_sql[0:len(create_sql)-2]
+        create_sql += "\n)"
+        this.createtable(Info.TableName,create_sql,primaryKey)
       }
-    }
-    this.createForeignKeyByRelation(sqlMap)
+   }
+   this.createForeignKeyByRelation(sqlMap)
 }
 
 

@@ -23,7 +23,7 @@ const (
 )
 
 
-type QueryInfo struct {
+type DbSqlBuilder struct {
   sqlQuery  string
   structObj  interface{}
   tableInfo  *DBTableInfo
@@ -34,25 +34,36 @@ type QueryInfo struct {
 }
 
 type  DbQuery interface {
-   Query(tableObj interface{},fetchType FetchType,structName []string) QueryInfo
-   SimpleQuery(tableObj interface{}) QueryInfo
-   Insert(structVal interface{} )
-   Update(structVal interface{} )
-   UpdateWithField(structVal interface{},fieldName[]string )
+   Query(tableObj interface{},fetchType FetchType,structName []string) *DbSqlBuilder
+   SimpleQuery(tableObj interface{}) *DbSqlBuilder
+   Insert(structVal interface{} ) *DbSqlBuilder
+   Update(structVal interface{} ) *DbSqlBuilder
+   UpdateWithField(structVal interface{},fieldName[]string ) *DbSqlBuilder
+   Delete(structVal interface{} ) *DbSqlBuilder
+   
    InsertWithSql(sql string,parameter []interface{})
    UpdateWithSql(sql string,parameter []interface{})
    ExecuteWithSql(sql string,parameter []interface{})
+   DeleteWithSql(sql string) 
 }
 
 
 type DbQueryInfo interface {
-   Limit(limit int) *QueryInfo
-   GetOneResult() interface{}
-   GetResultList() [] interface{}
+   Limit(limit int) *DbSqlBuilder
+   FetchOne() interface{}
+   FetchAll() [] interface{}
+   WhereAnd(fieldName []string) *DbSqlBuilder
+   WhereOr(fieldName []string) *DbSqlBuilder
+   WhereWithSql(sql string, param []interface{}) *DbSqlBuilder
+   And() *DbSqlBuilder
+   Or() *DbSqlBuilder
+   SaveExecute()
+   DeleteExecute()
+   InsertExecute()
 }
 
 
-func (this *QueryInfo) GetOneResult() (interface{},bool) {
+func (this *DbSqlBuilder) FetchOne() (interface{},bool) {
    var res []interface{}
    var rows *sql.Rows
    var result interface{}
@@ -112,7 +123,7 @@ func (this *Moudle) checkInList(obj reflect.Value,list [] reflect.Value,tableinf
 }
 
 
-func (this *QueryInfo) processValueToInterface(valueList *[]reflect.Value) []interface{} {
+func (this *DbSqlBuilder) processValueToInterface(valueList *[]reflect.Value) []interface{} {
    res := make([]interface{},0,0)
    for _,val := range *valueList{
       res = append(res,val.Elem().Interface())
@@ -120,7 +131,7 @@ func (this *QueryInfo) processValueToInterface(valueList *[]reflect.Value) []int
    return res
 }
 
-func (this *QueryInfo) processSelect(rows *sql.Rows,vallist *[]reflect.Value) {
+func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value) {
      for rows.Next() {
           objtype := reflect.TypeOf(this.structObj)
           structObj := reflect.New(objtype)
@@ -168,7 +179,7 @@ func (this *QueryInfo) processSelect(rows *sql.Rows,vallist *[]reflect.Value) {
       }
 }
 
-func (this *QueryInfo) GetResultList() []interface{} {
+func (this *DbSqlBuilder) FetchAll() []interface{} {
    vallist := make([]reflect.Value,0,0)
    var rows *sql.Rows
    var err error
@@ -183,7 +194,7 @@ func (this *QueryInfo) GetResultList() []interface{} {
    }
 }
 
-func (this *QueryInfo) Limit(limit int) *QueryInfo {
+func (this *DbSqlBuilder) Limit(limit int) *DbSqlBuilder {
    this.sqlQuery += this.moudle.DbProiver.LimitSql(limit)
    return this
 }
@@ -223,7 +234,7 @@ func (this *Moudle) createJoinSqlString(tableName1 string,tableName2 string,tabl
    return "",false
 }
 
-func (this *QueryInfo) createJoinSql(structName []string) string {
+func (this *DbSqlBuilder) createJoinSql(structName []string) string {
    var sql string = ""
    var index int = 2
    for _,name := range structName {
@@ -322,9 +333,9 @@ func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{}) []st
    return valueList
 }
 
-func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []string) QueryInfo {
+func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []string) *DbSqlBuilder {
    var table_info *DBTableInfo = nil
-   info := QueryInfo{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:fetchType,moudle:this,structNameList:make([]string,0,0)}
+   info := DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:fetchType,moudle:this,structNameList:make([]string,0,0)}
    defer func() {
       if err := recover(); err != nil {
          log.Error(err)
@@ -356,13 +367,13 @@ func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []
    }else {
      log.Error("not found the table relation with struct :" + struct_Name)
    }
-   return info
+   return &info
 }
 
 
-func (this *Moudle) SimpleQuery(tableObj interface{}) QueryInfo {
+func (this *Moudle) SimpleQuery(tableObj interface{}) *DbSqlBuilder {
    var table_info *DBTableInfo = nil
-   info := QueryInfo{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this,structNameList:make([]string,0,0)}
+   info := DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this,structNameList:make([]string,0,0)}
    structName := reflect.TypeOf(tableObj).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       info.tableInfo = val
@@ -370,22 +381,9 @@ func (this *Moudle) SimpleQuery(tableObj interface{}) QueryInfo {
    }else {
      log.Error("not found the table relation with struct :" + structName)
    }
-   return info
+   return &info
 }
 
-func (this *Moudle) Insert(structVal interface{} ) {
-   structName := reflect.TypeOf(structVal).Name()
-   if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      var valuelist []string = this.listValue(val,structVal)
-      var columnlist []string = this.listColumn(val) 
-      sqlstr := "insert into " + val.TableName + "(" + strings.Join(columnlist,",") + ") values (" +  strings.Join(valuelist,",")  +");"
-      if _,err := this.DbProiver.Insert(sqlstr); err != nil {
-         panic(err)
-      }
-   }else {
-      panic("No table relation with struct: " + structName)
-   }
-}
 
 func (this *Moudle) createUpdateSql(tableinfo *DBTableInfo,structVal interface{},fieldNameList []string) string {
    valueList := make([]string,0,0)
@@ -447,36 +445,72 @@ func (this *Moudle) createUpdateSql(tableinfo *DBTableInfo,structVal interface{}
    return strings.Join(valueList,",") + " where " + strings.Join(conditionList," and ") 
 }
 
-
-func (this *Moudle) Update(structVal interface{} ) {
-   structName := reflect.TypeOf(structVal).Name()
-   if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      updatestr := this.createUpdateSql(val,structVal,[]string{})
-      if len(updatestr) > 0 {
-         sqlstr := "update " + val.TableName + " set " + updatestr
-         if _,err := this.DbProiver.Update(sqlstr); err != nil {
-            panic(err)
-         }
-      }
-   }else {
-      panic("No table relation with struct: " + structName)
-   }
+func (this *DbSqlBuilder) InsertExecute() {
+  if len(this.sqlQuery) > 0 {
+    if _,err := this.moudle.DbProiver.Insert(this.sqlQuery); err != nil {
+       panic(err)
+    }
+  }
 }
 
 
-func (this *Moudle) UpdateWithField(structVal interface{},fieldName[]string ) {
+func (this *Moudle) Insert(structVal interface{} ) *DbSqlBuilder {
+   var table_info *DBTableInfo = nil
+   info := DbSqlBuilder{sqlQuery:"",structObj:structVal,tableInfo:table_info,moudle:this}
    structName := reflect.TypeOf(structVal).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      updatestr := this.createUpdateSql(val,structVal,fieldName)
+      info.tableInfo = val
+      var valuelist []string = this.listValue(val,structVal)
+      var columnlist []string = this.listColumn(val) 
+      sqlstr := "insert into " + val.TableName + "(" + strings.Join(columnlist,",") + ") values (" +  strings.Join(valuelist,",")  +")"
+      info.sqlQuery = sqlstr
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+   return &info
+}
+
+func (this *DbSqlBuilder) SaveExecute() {
+  if len(this.sqlQuery) > 0 {
+     if _,err := this.moudle.DbProiver.Update(this.sqlQuery); err != nil {
+         panic(err)
+     }
+  }
+}
+      
+func (this *Moudle) Update(structVal interface{} ) *DbSqlBuilder{
+   var table_info *DBTableInfo = nil
+   info := DbSqlBuilder{sqlQuery:"",structObj:structVal,tableInfo:table_info,moudle:this}
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      info.tableInfo = val
+      updatestr := this.createUpdateSql(val,structVal,[]string{})
       if len(updatestr) > 0 {
-        sqlstr := "update " + val.TableName + " set " +  updatestr
-        if _,err := this.DbProiver.Update(sqlstr); err != nil {
-           panic(err)
-        }
+         sqlstr := "update " + val.TableName + " set " + updatestr
+         info.sqlQuery = sqlstr
       }
    }else {
       panic("No table relation with struct: " + structName)
    }
+   return &info
+}
+
+
+func (this *Moudle) UpdateWithField(structVal interface{},fieldName[]string ) *DbSqlBuilder{
+   var table_info *DBTableInfo = nil
+   info := DbSqlBuilder{sqlQuery:"",structObj:structVal,tableInfo:table_info,moudle:this}
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      info.tableInfo = val
+      updatestr := this.createUpdateSql(val,structVal,fieldName)
+      if len(updatestr) > 0 {
+        sqlstr := "update " + val.TableName + " set " +  updatestr
+        info.sqlQuery = sqlstr
+      }
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+   return &info
 }
 
 func (this *Moudle) InsertWithSql(sql string,parameter []interface{})  {
