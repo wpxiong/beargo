@@ -246,7 +246,7 @@ func (this *Moudle)  createRelation() map[string]interface{} {
 }
 
 
-func InSliceTableList (arr []string, val string) (bool){
+func InSliceStringList (arr []string, val string) (bool){
     for _, v := range(arr) {
        if v == val  { return true; } 
     }    
@@ -258,13 +258,13 @@ func searchTableInRelation(relationMap map[string]interface{},tableName string, 
       mapforegin :=  val.(map[string][]ForeignKeyInfo) 
       for _,val2 := range mapforegin {
          for _, info := range val2 {
-            if !InSliceTableList(*tableList,info.TableName) {
+            if !InSliceStringList(*tableList,info.TableName) {
                searchTableInRelation(relationMap,info.TableName,tableList)
             }
          }
       }
    }else {
-      if !InSliceTableList(*tableList,tableName) {
+      if !InSliceStringList(*tableList,tableName) {
         (*tableList) = append(*tableList,tableName)
       }
    }
@@ -275,7 +275,7 @@ func (this *Moudle) sortTable(relationMap map[string]interface{}) []*DBTableInfo
    tableList := make([]string,0,0)
    for _,Info := range this.DbTableInfoByTableName {
       searchTableInRelation(relationMap,Info.TableName,&tableList)
-      if !InSliceTableList(tableList,Info.TableName) {
+      if !InSliceStringList(tableList,Info.TableName) {
         tableList = append(tableList,Info.TableName)
       }
    }
