@@ -39,12 +39,13 @@ type  DbQuery interface {
    Insert(structVal interface{} ) *DbSqlBuilder
    Update(structVal interface{} ) *DbSqlBuilder
    UpdateWithField(structVal interface{},fieldName[]string ) *DbSqlBuilder
-   Delete(structVal interface{} ) *DbSqlBuilder
    
    InsertWithSql(sql string,parameter []interface{})
    UpdateWithSql(sql string,parameter []interface{})
    ExecuteWithSql(sql string,parameter []interface{})
-   DeleteWithSql(sql string) 
+   DeleteWithSql(sql string,parameter []interface{})
+   DeleteWhere(structVal interface{}) *DbSqlBuilder
+   Delete(structVal interface{} ) 
 }
 
 
@@ -52,6 +53,7 @@ type DbQueryInfo interface {
    Limit(limit int) *DbSqlBuilder
    FetchOne() interface{}
    FetchAll() [] interface{}
+   FetchLazyField(fieldName []string)
    WhereAnd(fieldName []string) *DbSqlBuilder
    WhereOr(fieldName []string) *DbSqlBuilder
    WhereWithSql(sql string, param []interface{}) *DbSqlBuilder
@@ -278,10 +280,13 @@ func (this *Moudle) listColumn(tableinfo *DBTableInfo) []string {
    return columnList
 }
 
-func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{}) []string {
+func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{},fieldNameList []string) []string {
    valueList := make([]string,0,0)
    for _,fieldName := range tableinfo.FieldList {
       val := tableinfo.FiledNameMap[fieldName]
+      if len(fieldNameList) !=0 && !InSliceTableList(fieldNameList,fieldName) {
+          continue
+      }
       if val.RelationStructName == "" && val.AutoIncrement == false {
          value := reflect.ValueOf(structVal).FieldByName(val.FieldName)
          var valstr string
@@ -460,7 +465,7 @@ func (this *Moudle) Insert(structVal interface{} ) *DbSqlBuilder {
    structName := reflect.TypeOf(structVal).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       info.tableInfo = val
-      var valuelist []string = this.listValue(val,structVal)
+      var valuelist []string = this.listValue(val,structVal,[]string{})
       var columnlist []string = this.listColumn(val) 
       sqlstr := "insert into " + val.TableName + "(" + strings.Join(columnlist,",") + ") values (" +  strings.Join(valuelist,",")  +")"
       info.sqlQuery = sqlstr
@@ -477,6 +482,15 @@ func (this *DbSqlBuilder) SaveExecute() {
      }
   }
 }
+
+func (this *DbSqlBuilder) DeleteExecute() {
+  if len(this.sqlQuery) > 0 {
+     if _,err := this.moudle.DbProiver.ExecuteSQL(this.sqlQuery); err != nil {
+         panic(err)
+     }
+  }
+}
+
       
 func (this *Moudle) Update(structVal interface{} ) *DbSqlBuilder{
    var table_info *DBTableInfo = nil
@@ -513,14 +527,63 @@ func (this *Moudle) UpdateWithField(structVal interface{},fieldName[]string ) *D
    return &info
 }
 
-func (this *Moudle) InsertWithSql(sql string,parameter []interface{})  {
 
+
+func (this *Moudle) createKeyWhere(tableInfo *DBTableInfo,structVal interface{}) string {
+   keyList := make([]string,0,0)
+   columnList := make([]string,0,0)
+   wherList := make([]string,0,0)
+   for _,columnInfo := range tableInfo.FiledNameMap {
+      if columnInfo.IsId {
+         keyList = append(keyList,strings.ToLower(columnInfo.FieldName))
+         columnList = append(columnList,columnInfo.ColumnName)
+      }
+   }
+   var valueList []string = this.listValue(tableInfo,structVal,keyList)
+   for i:=0; i<len(columnList) ;i++ {
+      wherList = append(wherList, columnList[i] + " = " + valueList[i])
+   }
+   return " where " + strings.Join(wherList, " and ")
+}
+   
+func (this *Moudle)  Delete(structVal interface{} ) {
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      sqlstr := "delete from " + val.TableName + this.createKeyWhere(val,structVal)
+      if _,err := this.DbProiver.ExecuteSQL(sqlstr); err != nil {
+         panic(err)
+      }
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+}
+
+func (this *Moudle) DeleteWhere(structVal interface{}) *DbSqlBuilder {
+   var table_info *DBTableInfo = nil
+   info := DbSqlBuilder{sqlQuery:"",structObj:structVal,tableInfo:table_info,moudle:this}
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      info.tableInfo = val
+      sqlstr := "delete from " + val.TableName
+      info.sqlQuery = sqlstr
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+   return &info
+}
+
+func (this *Moudle)  DeleteWithSql(sql string,parameter []interface{}) {
+   this.DbProiver.PrepareExecuteSQL(sql,parameter)
+}
+
+func (this *Moudle) InsertWithSql(sql string,parameter []interface{})  {
+  this.DbProiver.PrepareExecuteSQL(sql,parameter)
 }
 
 func (this *Moudle) UpdateWithSql(sql string,parameter []interface{}) {
-
+   this.DbProiver.PrepareExecuteSQL(sql,parameter)
 }
 
 func (this *Moudle) ExecuteWithSql(sql string,parameter []interface{}) {
-
+   this.DbProiver.PrepareExecuteSQL(sql,parameter)
 }

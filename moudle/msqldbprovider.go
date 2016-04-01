@@ -177,6 +177,18 @@ func (this *MysqlDBProvider )   AppendScanComplexField(list *[]interface{}) {
     (*list) = append(*list,&complexField)
 }
 
+func (this *MysqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interface{}) {
+    if smt,err := this.db.Prepare(sql);err == nil {
+       log.Debug(sql)
+       log.Debug(parameter)
+       if _, err1 := smt.Exec(parameter...);err1 != nil {
+          panic(err)
+       }
+    }else {
+       panic(err)
+    }
+}
+
    
 func (this *MysqlDBProvider )  TableExistsInDB(tableName string) (bool,error) {
    var sql string = "show tables like '" + tableName + "';"

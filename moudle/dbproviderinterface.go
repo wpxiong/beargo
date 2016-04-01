@@ -18,6 +18,7 @@ type DbProviderInterface interface {
    CreateTable(tableName string , sqlstr string,primaryKey []string) (sql.Result ,error)
    DropTable(tableName string) (sql.Result ,error)
    ExecuteSQL(sql string) (sql.Result ,error)
+   PrepareExecuteSQL(sql string ,parameter []interface{})
    CreatePrimaryKey(tableName string,keyList []string)  (sql.Result ,error)
    CreateForeignKey(tableName string ,  keyColumn string, refrenceTableName string, referenceColumnName string) (sql.Result ,error)
    Begin() (*sql.Tx,error)
