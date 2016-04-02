@@ -12,13 +12,13 @@ func init() {
 
 type DbProviderInterface interface {
    ConnectionDb(dburl string) error 
-   Query(sql string) (*sql.Rows ,error)
-   Insert(sql string) (sql.Result ,error)
-   Update(sql string) (sql.Result ,error)
+   Query(sql string,tx *Trans) (*sql.Rows ,error)
+   Insert(sql string,tx *Trans) (sql.Result ,error)
+   Update(sql string,tx *Trans) (sql.Result ,error)
    CreateTable(tableName string , sqlstr string,primaryKey []string) (sql.Result ,error)
    DropTable(tableName string) (sql.Result ,error)
-   ExecuteSQL(sql string) (sql.Result ,error)
-   PrepareExecuteSQL(sql string ,parameter []interface{})
+   ExecuteSQL(sql string,tx *Trans) (sql.Result ,error)
+   PrepareExecuteSQL(sql string ,parameter []interface{},tx *Trans)
    CreatePrimaryKey(tableName string,keyList []string)  (sql.Result ,error)
    CreateForeignKey(tableName string ,  keyColumn string, refrenceTableName string, referenceColumnName string) (sql.Result ,error)
    Begin() (*sql.Tx,error)

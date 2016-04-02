@@ -33,8 +33,9 @@ type DbSqlBuilder struct {
   moudle   *Moudle
   haswherekeyword  bool
   paramlist  []interface{}
+  ts      *Trans
 }
-
+   
 type  DbQuery interface {
    Query(tableObj interface{},fetchType FetchType,structName []string) *DbSqlBuilder
    SimpleQuery(tableObj interface{}) *DbSqlBuilder
@@ -70,13 +71,47 @@ type DbQueryInfo interface {
 }
 
 
-func (this *DbSqlBuilder) FetchOne() (interface{},bool) {
+
+func (this *Moudle) query(sqlStr string,tx *Trans) (*sql.Rows, error){
+   return this.DbProiver.Query(sqlStr,tx)
+}
+
+func (this *Moudle) insert(sqlStr string,tx *Trans) (sql.Result ,error){
+   return this.DbProiver.Insert(sqlStr,tx)
+}
+
+func (this *Moudle) update(sqlStr string,tx *Trans) (sql.Result ,error){
+    return this.DbProiver.Update(sqlStr,tx)
+}
+
+func (this *Moudle)  prepareExecuteSQL(sqlStr string ,parameter []interface{},tx *Trans) {
+    this.DbProiver.PrepareExecuteSQL(sqlStr,parameter,tx)
+}
+
+func (this *Moudle) executeSQL(sqlStr string,tx *Trans) (sql.Result ,error){
+    return this.DbProiver.ExecuteSQL(sqlStr,tx)
+}
+
+
+func (this *DbSqlBuilder) deleteExecute(ts *Trans) {
+  if len(this.sqlQuery) > 0 {
+    if len(this.paramlist) == 0 { 
+      if _,err := this.moudle.DbProiver.ExecuteSQL(this.sqlQuery,ts); err != nil {
+         panic(err)
+      }
+    }else {
+      this.moudle.DbProiver.PrepareExecuteSQL(this.sqlQuery,this.paramlist,ts)
+    }
+  }
+}
+
+func (this *DbSqlBuilder) fetchOne(ts *Trans) (interface{},bool) {
    var res []interface{}
    var rows *sql.Rows
    var result interface{}
    vallist := make([]reflect.Value,0,0)
    var err error
-   rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
+   rows,err = this.moudle.DbProiver.Query(this.sqlQuery,ts)
    defer rows.Close()
    if err != nil {
       log.Error(err)
@@ -186,11 +221,11 @@ func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value)
       }
 }
 
-func (this *DbSqlBuilder) FetchAll() []interface{} {
+func (this *DbSqlBuilder) fetchAll(ts *Trans) []interface{} {
    vallist := make([]reflect.Value,0,0)
    var rows *sql.Rows
    var err error
-   rows,err = this.moudle.DbProiver.Query(this.sqlQuery)
+   rows,err = this.moudle.DbProiver.Query(this.sqlQuery,ts)
    defer rows.Close()
    if err != nil {
       log.Error(err)
@@ -199,15 +234,6 @@ func (this *DbSqlBuilder) FetchAll() []interface{} {
       this.processSelect(rows,&vallist)
       return this.processValueToInterface(&vallist)
    }
-}
-
-func (this *DbSqlBuilder) Limit(limit int) *DbSqlBuilder {
-   this.sqlQuery += this.moudle.DbProiver.LimitSql(limit)
-   return this
-}
-
-func (this *DbSqlBuilder) FetchLazyField(fieldName []string) {
-   
 }
 
 func (this *Moudle) createFieldList(tableInfo *DBTableInfo,structVal interface{},fieldNameList []string) []string {
@@ -228,84 +254,7 @@ func (this *Moudle) createFieldList(tableInfo *DBTableInfo,structVal interface{}
 }
 
 
-func (this *DbSqlBuilder) WhereAnd(fieldName []string) *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     if !this.haswherekeyword {
-        this.sqlQuery += " where "
-        this.haswherekeyword = true
-     }
-     this.sqlQuery += " " + strings.Join(this.moudle.createFieldList(this.tableInfo,this.structObj,fieldName)," and ")
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
 
-
-
-func (this *DbSqlBuilder) WhereOr(fieldName []string) *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     if !this.haswherekeyword {
-        this.sqlQuery += " where "
-        this.haswherekeyword = true
-     }
-     this.sqlQuery += " " + strings.Join(this.moudle.createFieldList(this.tableInfo,this.structObj,fieldName)," or ")
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
-
-
-func (this *DbSqlBuilder) WhereWithSql(sql string, param []interface{}) *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     if !this.haswherekeyword {
-        this.sqlQuery += " where "
-        this.haswherekeyword = true
-     }
-     this.sqlQuery += " " + sql
-     this.paramlist = append(this.paramlist,param...)
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
-
-func (this *DbSqlBuilder) And() *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     this.sqlQuery += " and " 
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
-
-func (this *DbSqlBuilder) Or(sql string, param []interface{}) *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     this.sqlQuery += " or " 
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
-
-func (this *DbSqlBuilder) End() *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     this.sqlQuery += " ( " 
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
-
-func (this *DbSqlBuilder) Start() *DbSqlBuilder {
-   if this.tableInfo != nil && this.sqlQuery != "" {
-     this.sqlQuery += " ) " 
-   }else {
-      panic("create where sql error!")
-   }
-   return this
-}
 
 func (this *Moudle) searchField(tableInfo  *DBTableInfo, fieldName string) (string,bool) {
     for _,val := range tableInfo.FiledNameMap {
@@ -448,58 +397,6 @@ func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{},field
    return valueList
 }
 
-func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []string) *DbSqlBuilder {
-   var table_info *DBTableInfo = nil
-   info := DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:fetchType,moudle:this,structNameList:make([]string,0,0)}
-   defer func() {
-      if err := recover(); err != nil {
-         log.Error(err)
-         info.tableInfo = nil
-      }
-   }()
-   struct_Name := reflect.TypeOf(tableObj).Name()
-   if val,ok := this.DbTableInfoByStructName[struct_Name]; ok {
-      if fetchType == EAGER {
-        info.tableInfo = val
-        var tableIndex int = 1
-        columnlist := this.listTableColumn(info.tableInfo,tableIndex)
-        for _,name := range structName {
-          if struct_name,ok := this.searchField(val,name);ok {
-              table_info := this.DbTableInfoByStructName[struct_name]
-              tableIndex += 1
-              list := this.listTableColumn(table_info,tableIndex);
-              columnlist = append(columnlist,list...)
-          }else {
-              panic("not found fieldName db table name relation with field " + name)
-          }
-        }
-        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 " + info.createJoinSql(structName)
-      }else {
-        info.tableInfo = val
-        columnlist := this.listTableColumn(info.tableInfo,1)
-        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 "
-      }
-   }else {
-     log.Error("not found the table relation with struct :" + struct_Name)
-   }
-   return &info
-}
-
-
-func (this *Moudle) SimpleQuery(tableObj interface{}) *DbSqlBuilder {
-   var table_info *DBTableInfo = nil
-   info := DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this,structNameList:make([]string,0,0)}
-   structName := reflect.TypeOf(tableObj).Name()
-   if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      info.tableInfo = val
-      info.sqlQuery = "select * from " + info.tableInfo.TableName;
-   }else {
-     log.Error("not found the table relation with struct :" + structName)
-   }
-   return &info
-}
-
-
 func (this *Moudle) createUpdateSql(tableinfo *DBTableInfo,structVal interface{},fieldNameList []string) string {
    valueList := make([]string,0,0)
    conditionList := make([]string,0,0)
@@ -560,14 +457,208 @@ func (this *Moudle) createUpdateSql(tableinfo *DBTableInfo,structVal interface{}
    return strings.Join(valueList,",") + " where " + strings.Join(conditionList," and ") 
 }
 
-func (this *DbSqlBuilder) InsertExecute() {
+
+func (this *DbSqlBuilder) insertExecute(ts *Trans) {
   if len(this.sqlQuery) > 0 {
-    if _,err := this.moudle.DbProiver.Insert(this.sqlQuery); err != nil {
+    if _,err := this.moudle.DbProiver.Insert(this.sqlQuery,ts); err != nil {
        panic(err)
     }
   }
 }
 
+
+func (this *DbSqlBuilder) saveExecute(ts *Trans) {
+  if len(this.sqlQuery) > 0 {
+     if len(this.paramlist) == 0 { 
+       if _,err := this.moudle.DbProiver.Update(this.sqlQuery,ts); err != nil {
+         panic(err)
+       }
+     }else {
+       this.moudle.DbProiver.PrepareExecuteSQL(this.sqlQuery,this.paramlist,ts)
+     }
+  }
+}
+
+func (this *Moudle) updateDB(structVal interface{} ,ts *Trans){
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      updatestr := this.createUpdateSql(val,structVal,[]string{})
+      if len(updatestr) > 0 {
+         sqlstr := "update " + val.TableName + " set " + updatestr
+         if _,err := this.DbProiver.Update(sqlstr,ts); err != nil {
+            panic(err)
+         }
+      }
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+}
+
+func (this *Moudle) updateWithField(structVal interface{},fieldName[]string,ts* Trans) {
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      updatestr := this.createUpdateSql(val,structVal,fieldName)
+      if len(updatestr) > 0 {
+        sqlstr := "update " + val.TableName + " set " +  updatestr
+        if _,err := this.DbProiver.Update(sqlstr,ts); err != nil {
+           panic(err)
+        }
+      }
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+}
+
+
+
+func (this *Moudle) createKeyWhere(tableInfo *DBTableInfo,structVal interface{}) string {
+   keyList := make([]string,0,0)
+   columnList := make([]string,0,0)
+   wherList := make([]string,0,0)
+   for _,columnInfo := range tableInfo.FiledNameMap {
+      if columnInfo.IsId {
+         keyList = append(keyList,strings.ToLower(columnInfo.FieldName))
+         columnList = append(columnList,columnInfo.ColumnName)
+      }
+   }
+   var valueList []string = this.listValue(tableInfo,structVal,keyList)
+   for i:=0; i<len(columnList) ;i++ {
+      wherList = append(wherList, columnList[i] + " = " + valueList[i])
+   }
+   return " where " + strings.Join(wherList, " and ")
+}
+
+func (this *Moudle)  delete(structVal interface{} ,ts *Trans) {
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      sqlstr := "delete from " + val.TableName + this.createKeyWhere(val,structVal)
+      if _,err := this.DbProiver.ExecuteSQL(sqlstr,nil); err != nil {
+         panic(err)
+      }
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+}
+
+func (this *Moudle)  deleteWithSql(sql string,parameter []interface{},ts *Trans) {
+   this.DbProiver.PrepareExecuteSQL(sql,parameter,ts)
+}
+
+func (this *Moudle) insertWithSql(sql string,parameter []interface{},ts *Trans)  {
+  this.DbProiver.PrepareExecuteSQL(sql,parameter,ts)
+}
+
+func (this *Moudle) updateWithSql(sql string,parameter []interface{},ts *Trans) {
+   this.DbProiver.PrepareExecuteSQL(sql,parameter,ts)
+}
+
+
+func (this *Moudle) executeWithSql(sql string,parameter []interface{},ts *Trans) {
+   this.DbProiver.PrepareExecuteSQL(sql,parameter,ts)
+}
+
+
+//Public Method
+
+func (this *Moudle)  Delete(structVal interface{} ) {
+   this.delete(structVal,nil)
+}
+
+func (this *DbSqlBuilder) FetchOne() (interface{},bool) {
+    return this.fetchOne(nil)
+}
+
+func (this *DbSqlBuilder) Limit(limit int) *DbSqlBuilder {
+   this.sqlQuery += this.moudle.DbProiver.LimitSql(limit)
+   return this
+}
+
+func (this *DbSqlBuilder) FetchLazyField(fieldName []string) {
+   
+}
+
+func (this *DbSqlBuilder) FetchAll() []interface{} {
+   return this.fetchAll(nil)
+}
+
+func (this *DbSqlBuilder) WhereAnd(fieldName []string) *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     if !this.haswherekeyword {
+        this.sqlQuery += " where "
+        this.haswherekeyword = true
+     }
+     this.sqlQuery += " " + strings.Join(this.moudle.createFieldList(this.tableInfo,this.structObj,fieldName)," and ")
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
+
+
+
+func (this *DbSqlBuilder) WhereOr(fieldName []string) *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     if !this.haswherekeyword {
+        this.sqlQuery += " where "
+        this.haswherekeyword = true
+     }
+     this.sqlQuery += " " + strings.Join(this.moudle.createFieldList(this.tableInfo,this.structObj,fieldName)," or ")
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
+
+
+func (this *DbSqlBuilder) WhereWithSql(sql string, param []interface{}) *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     if !this.haswherekeyword {
+        this.sqlQuery += " where "
+        this.haswherekeyword = true
+     }
+     this.sqlQuery += " " + sql
+     this.paramlist = append(this.paramlist,param...)
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
+
+func (this *DbSqlBuilder) And() *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     this.sqlQuery += " and " 
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
+
+func (this *DbSqlBuilder) Or(sql string, param []interface{}) *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     this.sqlQuery += " or " 
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
+
+func (this *DbSqlBuilder) End() *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     this.sqlQuery += " ( " 
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
+
+func (this *DbSqlBuilder) Start() *DbSqlBuilder {
+   if this.tableInfo != nil && this.sqlQuery != "" {
+     this.sqlQuery += " ) " 
+   }else {
+      panic("create where sql error!")
+   }
+   return this
+}
 
 func (this *Moudle) Insert(structVal interface{} ) *DbSqlBuilder {
    var table_info *DBTableInfo = nil
@@ -585,44 +676,60 @@ func (this *Moudle) Insert(structVal interface{} ) *DbSqlBuilder {
    return &info
 }
 
-func (this *DbSqlBuilder) SaveExecute() {
-  if len(this.sqlQuery) > 0 {
-     if len(this.paramlist) == 0 { 
-       if _,err := this.moudle.DbProiver.Update(this.sqlQuery); err != nil {
-         panic(err)
-       }
-     }else {
-       this.moudle.DbProiver.PrepareExecuteSQL(this.sqlQuery,this.paramlist)
-     }
-  }
-}
-
-func (this *DbSqlBuilder) DeleteExecute() {
-  if len(this.sqlQuery) > 0 {
-    if len(this.paramlist) == 0 { 
-      if _,err := this.moudle.DbProiver.ExecuteSQL(this.sqlQuery); err != nil {
-         panic(err)
+func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []string) *DbSqlBuilder {
+   var table_info *DBTableInfo = nil
+   info := DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:fetchType,moudle:this,structNameList:make([]string,0,0)}
+   defer func() {
+      if err := recover(); err != nil {
+         log.Error(err)
+         info.tableInfo = nil
       }
-    }else {
-      this.moudle.DbProiver.PrepareExecuteSQL(this.sqlQuery,this.paramlist)
-    }
-  }
-}
-
-      
-func (this *Moudle) Update(structVal interface{} ){
-   structName := reflect.TypeOf(structVal).Name()
-   if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      updatestr := this.createUpdateSql(val,structVal,[]string{})
-      if len(updatestr) > 0 {
-         sqlstr := "update " + val.TableName + " set " + updatestr
-         if _,err := this.DbProiver.Update(sqlstr); err != nil {
-            panic(err)
-         }
+   }()
+   struct_Name := reflect.TypeOf(tableObj).Name()
+   if val,ok := this.DbTableInfoByStructName[struct_Name]; ok {
+      if fetchType == EAGER {
+        info.tableInfo = val
+        var tableIndex int = 1
+        columnlist := this.listTableColumn(info.tableInfo,tableIndex)
+        for _,name := range structName {
+          if struct_name,ok := this.searchField(val,name);ok {
+              table_info := this.DbTableInfoByStructName[struct_name]
+              tableIndex += 1
+              list := this.listTableColumn(table_info,tableIndex);
+              columnlist = append(columnlist,list...)
+          }else {
+              panic("not found fieldName db table name relation with field " + name)
+          }
+        }
+        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 " + info.createJoinSql(structName)
+      }else {
+        info.tableInfo = val
+        columnlist := this.listTableColumn(info.tableInfo,1)
+        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 "
       }
    }else {
-      panic("No table relation with struct: " + structName)
+     log.Error("not found the table relation with struct :" + struct_Name)
    }
+   return &info
+}
+
+
+func (this *Moudle) SimpleQuery(tableObj interface{}) *DbSqlBuilder {
+   var table_info *DBTableInfo = nil
+   info := DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this,structNameList:make([]string,0,0)}
+   structName := reflect.TypeOf(tableObj).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      info.tableInfo = val
+      info.sqlQuery = "select * from " + info.tableInfo.TableName;
+   }else {
+     log.Error("not found the table relation with struct :" + structName)
+   }
+   return &info
+}
+
+
+func (this *Moudle) Update(structVal interface{} ){
+   this.updateDB(structVal,nil)
 }
 
 func (this *Moudle) UpdateWithWhere(structVal interface{},fieldName[]string)  *DbSqlBuilder {
@@ -658,55 +765,12 @@ func (this *Moudle) UpdateWithWhere(structVal interface{},fieldName[]string)  *D
       panic("No table relation with struct: " + structName)
    }
    return &info
-
 }
-
 
 func (this *Moudle) UpdateWithField(structVal interface{},fieldName[]string ) {
-   structName := reflect.TypeOf(structVal).Name()
-   if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      updatestr := this.createUpdateSql(val,structVal,fieldName)
-      if len(updatestr) > 0 {
-        sqlstr := "update " + val.TableName + " set " +  updatestr
-        if _,err := this.DbProiver.Update(sqlstr); err != nil {
-           panic(err)
-        }
-      }
-   }else {
-      panic("No table relation with struct: " + structName)
-   }
+   this.updateWithField(structVal,fieldName,nil)
 }
 
-
-
-func (this *Moudle) createKeyWhere(tableInfo *DBTableInfo,structVal interface{}) string {
-   keyList := make([]string,0,0)
-   columnList := make([]string,0,0)
-   wherList := make([]string,0,0)
-   for _,columnInfo := range tableInfo.FiledNameMap {
-      if columnInfo.IsId {
-         keyList = append(keyList,strings.ToLower(columnInfo.FieldName))
-         columnList = append(columnList,columnInfo.ColumnName)
-      }
-   }
-   var valueList []string = this.listValue(tableInfo,structVal,keyList)
-   for i:=0; i<len(columnList) ;i++ {
-      wherList = append(wherList, columnList[i] + " = " + valueList[i])
-   }
-   return " where " + strings.Join(wherList, " and ")
-}
-   
-func (this *Moudle)  Delete(structVal interface{} ) {
-   structName := reflect.TypeOf(structVal).Name()
-   if val,ok := this.DbTableInfoByStructName[structName]; ok {
-      sqlstr := "delete from " + val.TableName + this.createKeyWhere(val,structVal)
-      if _,err := this.DbProiver.ExecuteSQL(sqlstr); err != nil {
-         panic(err)
-      }
-   }else {
-      panic("No table relation with struct: " + structName)
-   }
-}
 
 func (this *Moudle) DeleteWhere(structVal interface{}) *DbSqlBuilder {
    var table_info *DBTableInfo = nil
@@ -722,18 +786,22 @@ func (this *Moudle) DeleteWhere(structVal interface{}) *DbSqlBuilder {
    return &info
 }
 
+
 func (this *Moudle)  DeleteWithSql(sql string,parameter []interface{}) {
-   this.DbProiver.PrepareExecuteSQL(sql,parameter)
+   this.deleteWithSql(sql,parameter,nil)
 }
+
 
 func (this *Moudle) InsertWithSql(sql string,parameter []interface{})  {
-  this.DbProiver.PrepareExecuteSQL(sql,parameter)
+  this.insertWithSql(sql,parameter,nil)
 }
 
+
 func (this *Moudle) UpdateWithSql(sql string,parameter []interface{}) {
-   this.DbProiver.PrepareExecuteSQL(sql,parameter)
+   this.prepareExecuteSQL(sql,parameter,nil)
 }
 
 func (this *Moudle) ExecuteWithSql(sql string,parameter []interface{}) {
-   this.DbProiver.PrepareExecuteSQL(sql,parameter)
+   this.executeWithSql(sql,parameter,nil)
 }
+

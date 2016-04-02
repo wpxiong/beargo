@@ -17,6 +17,7 @@ func init() {
 
 type MysqlDBProvider struct {
    db *sql.DB
+   
 }
 
 func (this *MysqlDBProvider )  SetMinConnection(max int) {
@@ -35,7 +36,7 @@ func (this *MysqlDBProvider )  Commit(tx *sql.Tx) error {
    return tx.Commit()
 }
 
-func (this *MysqlDBProvider )  Close() error{
+func (this *MysqlDBProvider )  Close() error {
    return this.db.Close()
 }
 
@@ -48,14 +49,22 @@ func (this *MysqlDBProvider ) ConnectionDb(dburl string) error {
   return err
 }
 
-func (this *MysqlDBProvider ) Query(sql string) (*sql.Rows ,error){
+func (this *MysqlDBProvider ) Query(sql string,ts *Trans) (*sql.Rows ,error){
    log.Info(sql)
-   return this.db.Query(sql)
+   if ts == nil {
+     return this.db.Query(sql)
+   }else {
+     return ts.tx.Query(sql)
+   }
 }
 
-func (this *MysqlDBProvider ) Insert(sql string) (sql.Result ,error){
+func (this *MysqlDBProvider ) Insert(sql string,ts *Trans) (sql.Result ,error){
    log.Info(sql)
-   return this.db.Exec(sql)
+   if ts == nil {
+     return this.db.Exec(sql)
+   }else {
+     return ts.tx.Exec(sql)
+   }
 }
 
 func (this *MysqlDBProvider ) CreateTable(tableName string,sqlstr string,primaryKey []string) (sql.Result ,error) {
@@ -83,14 +92,22 @@ func  (this *MysqlDBProvider ) CreatePrimaryKey(tableName string,keyList []strin
    }
 }
 
-func (this *MysqlDBProvider ) ExecuteSQL(sql string) (sql.Result ,error){
+func (this *MysqlDBProvider ) ExecuteSQL(sql string,ts *Trans) (sql.Result ,error){
    log.Info(sql)
-   return this.db.Exec(sql)
+   if ts == nil {
+     return this.db.Exec(sql)
+   }else {
+     return ts.tx.Exec(sql)
+   }
 }
 
-func (this *MysqlDBProvider ) Update(sql string) (sql.Result ,error){
+func (this *MysqlDBProvider ) Update(sql string,ts *Trans) (sql.Result ,error){
    log.Info(sql)
-   return this.db.Exec(sql)
+   if ts == nil {
+     return this.db.Exec(sql)
+   }else {
+     return ts.tx.Exec(sql)
+   }
 }
 
 
@@ -177,16 +194,25 @@ func (this *MysqlDBProvider )   AppendScanComplexField(list *[]interface{}) {
     (*list) = append(*list,&complexField)
 }
 
-func (this *MysqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interface{}) {
+func (this *MysqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interface{},ts *Trans) {
+ if ts == nil {
     if smt,err := this.db.Prepare(sql);err == nil {
-       log.Debug(sql)
-       log.Debug(parameter)
        if _, err1 := smt.Exec(parameter...);err1 != nil {
           panic(err)
        }
     }else {
        panic(err)
     }
+ }else {
+    if smt,err := this.db.Prepare(sql);err == nil {
+       smt = ts.tx.Stmt(smt)
+       if _, err1 := smt.Exec(parameter...);err1 != nil {
+          panic(err)
+       }
+    }else {
+       panic(err)
+    }
+ }
 }
 
    
