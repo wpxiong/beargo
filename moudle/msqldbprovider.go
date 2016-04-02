@@ -195,6 +195,7 @@ func (this *MysqlDBProvider )   AppendScanComplexField(list *[]interface{}) {
 }
 
 func (this *MysqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interface{},ts *Trans) {
+ log.Debug(sql)
  if ts == nil {
     if smt,err := this.db.Prepare(sql);err == nil {
        if _, err1 := smt.Exec(parameter...);err1 != nil {
@@ -205,6 +206,7 @@ func (this *MysqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interfa
     }
  }else {
     if smt,err := this.db.Prepare(sql);err == nil {
+       log.Debug("xiong wee")
        smt = ts.tx.Stmt(smt)
        if _, err1 := smt.Exec(parameter...);err1 != nil {
           panic(err)

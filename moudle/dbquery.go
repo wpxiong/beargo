@@ -72,24 +72,24 @@ type DbQueryInfo interface {
 
 
 
-func (this *Moudle) query(sqlStr string,tx *Trans) (*sql.Rows, error){
-   return this.DbProiver.Query(sqlStr,tx)
+func (this *Moudle) query(sqlStr string,ts *Trans) (*sql.Rows, error){
+   return this.DbProiver.Query(sqlStr,ts)
 }
 
-func (this *Moudle) insert(sqlStr string,tx *Trans) (sql.Result ,error){
-   return this.DbProiver.Insert(sqlStr,tx)
+func (this *Moudle) insert(sqlStr string,ts *Trans) (sql.Result ,error){
+   return this.DbProiver.Insert(sqlStr,ts)
 }
 
-func (this *Moudle) update(sqlStr string,tx *Trans) (sql.Result ,error){
-    return this.DbProiver.Update(sqlStr,tx)
+func (this *Moudle) update(sqlStr string,ts *Trans) (sql.Result ,error){
+    return this.DbProiver.Update(sqlStr,ts)
 }
 
-func (this *Moudle)  prepareExecuteSQL(sqlStr string ,parameter []interface{},tx *Trans) {
-    this.DbProiver.PrepareExecuteSQL(sqlStr,parameter,tx)
+func (this *Moudle)  prepareExecuteSQL(sqlStr string ,parameter []interface{},ts *Trans) {
+    this.DbProiver.PrepareExecuteSQL(sqlStr,parameter,ts)
 }
 
-func (this *Moudle) executeSQL(sqlStr string,tx *Trans) (sql.Result ,error){
-    return this.DbProiver.ExecuteSQL(sqlStr,tx)
+func (this *Moudle) executeSQL(sqlStr string,ts *Trans) (sql.Result ,error){
+    return this.DbProiver.ExecuteSQL(sqlStr,ts)
 }
 
 
@@ -532,7 +532,7 @@ func (this *Moudle)  delete(structVal interface{} ,ts *Trans) {
    structName := reflect.TypeOf(structVal).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       sqlstr := "delete from " + val.TableName + this.createKeyWhere(val,structVal)
-      if _,err := this.DbProiver.ExecuteSQL(sqlstr,nil); err != nil {
+      if _,err := this.DbProiver.ExecuteSQL(sqlstr,ts); err != nil {
          panic(err)
       }
    }else {

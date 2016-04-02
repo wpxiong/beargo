@@ -16,7 +16,7 @@ type Trans struct {
   moudle *Moudle
 }
 
-func (this *Moudle) Beign() *Trans {
+func (this *Moudle) Begin() *Trans {
   var tr *Trans = &Trans{moudle:this}
   if tx,err := this.DbProiver.Begin();err == nil {
     tr.tx = tx
@@ -26,6 +26,10 @@ func (this *Moudle) Beign() *Trans {
   }
 }
 
+func (this *Moudle) Close() error {
+  return this.DbProiver.Close()
+}
+
 func (this *Trans) Commit() error {
   if this.tx != nil {
      return this.tx.Commit()
@@ -33,9 +37,7 @@ func (this *Trans) Commit() error {
   return errors.New("No DB transaction")
 }
 
-func (this *Moudle) Close() error {
-  return this.DbProiver.Close()
-}
+
 
 func (this *Trans) Rollback() error {
   if this.tx != nil {
