@@ -228,6 +228,43 @@ func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value)
       }
 }
 
+func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string) {
+   structName := reflect.TypeOf(structObj).Name()
+   var tableInfo *DBTableInfo
+   var ok bool
+   if tableInfo,ok = this.DbTableInfoByStructName[structName]; !ok {
+      panic("not find the table relation with the interface :" + structName)
+   }
+   for _,name := range fieldName {
+      if struct_name,ok := this.searchField(tableInfo,name);ok {
+         table_info := this.DbTableInfoByStructName[struct_name]
+         tableObj := table_info.DbStuct
+         var newSqlBuilder *DbSqlBuilder =  &DbSqlBuilder{sqlQuery:"",structObj:tableObj,tableInfo:table_info,fetchjointable:make([]string,0,0),fetchtype:LAZY,moudle:this,structNameList:make([]string,0,0)}
+         var refrencedcolumnName string = ""
+         var columnName string = ""
+         for _,val := range this.RelationInfoList {
+            if val.DbTableName == tableInfo.TableName && val.StructName == table_info.StructName {
+              refrencedcolumnName = val.ReferencedColumnName
+              columnName = val.ColumnName
+            } 
+         }
+         var sqlQuery string = "select * from " + table_info.TableName
+         if columnName != "" {
+            columnInfo := tableInfo.FiledNameMap[columnName]
+            fieldVal := reflect.ValueOf(structObj).FieldByName(columnInfo.FieldName)
+            sqlQuery += " where " + refrencedcolumnName + " = "  + this.getFieldValueString(&columnInfo,&fieldVal)
+         }else {
+             panic("not find the table relation with the interface :" + structName)
+         }
+         newSqlBuilder.sqlQuery = sqlQuery
+         vallist := newSqlBuilder.fetchAll(nil)
+         log.Debug(vallist)
+      }else {
+         panic("not found fieldName db table name relation with field " + name)
+      }
+   }
+}
+
 func (this *DbSqlBuilder) fetchAll(ts *Trans) []interface{} {
    vallist := make([]reflect.Value,0)
    var rows *sql.Rows
@@ -404,6 +441,45 @@ func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{},field
    return valueList
 }
 
+func (this *Moudle)  getFieldValueString(val *ColumnInfo,value *reflect.Value) string {
+  var valstr string = ""
+  switch val.FieldType.Kind(){
+    case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+       valstr = strconv.FormatInt(value.Int(),10)
+    case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+       valstr = strconv.FormatUint(value.Uint(), 10)
+    case reflect.Uintptr:
+    case reflect.Float32,reflect.Float64:
+       valstr = strconv.FormatFloat(value.Float(),'f', -1, 64)
+    case reflect.Complex64:
+       valstr = this.DbProiver.GetInsertDBComplex64Sql(value.Complex())
+    case reflect.Complex128:
+       valstr = this.DbProiver.GetInsertDBComplex128Sql(value.Complex())
+    case reflect.Array:
+    case reflect.Bool:
+       if value.Bool() {
+          valstr = "'1'"
+       }else {
+          valstr = "'0'"
+       }
+    case reflect.Ptr:
+    case reflect.Struct:
+       if val.FieldType.Name() == "Time" {
+         ti := value.Interface().(time.Time)
+         valstr = this.DbProiver.GetInsertDBTimeSql(ti)
+       }
+    case reflect.Slice:
+       elemtype := val.FieldType.Elem().Name()
+       if elemtype == "byte" {
+       
+       }
+    case reflect.Map:
+    case reflect.String:
+       valstr = "'" + value.String() + "'"
+    }
+    return valstr
+}
+
 func (this *Moudle) createUpdateSql(tableinfo *DBTableInfo,structVal interface{},fieldNameList []string) string {
    valueList := make([]string,0,0)
    conditionList := make([]string,0,0)
@@ -412,47 +488,9 @@ func (this *Moudle) createUpdateSql(tableinfo *DBTableInfo,structVal interface{}
       if val.RelationStructName == "" && val.AutoIncrement == false {
          value := reflect.ValueOf(structVal).FieldByName(val.FieldName)
          var valstr string
-         switch val.FieldType.Kind(){
-            case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
-              valstr = strconv.FormatInt(value.Int(),10)
-            case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
-              valstr = strconv.FormatUint(value.Uint(), 10)
-            case reflect.Uintptr:
-              continue
-            case reflect.Float32,reflect.Float64:
-              valstr = strconv.FormatFloat(value.Float(),'f', -1, 64)
-            case reflect.Complex64:
-              valstr = this.DbProiver.GetInsertDBComplex64Sql(value.Complex())
-            case reflect.Complex128:
-              valstr = this.DbProiver.GetInsertDBComplex128Sql(value.Complex())
-            case reflect.Array:
-              continue
-            case reflect.Bool:
-               if value.Bool() {
-                 valstr = "'1'"
-               }else {
-                 valstr = "'0'"
-               }
-            case reflect.Ptr:
-              continue
-            case reflect.Struct:
-              if val.FieldType.Name() == "Time" {
-                ti := value.Interface().(time.Time)
-                valstr = this.DbProiver.GetInsertDBTimeSql(ti)
-              }else {
-                continue
-              }
-            case reflect.Slice:
-              elemtype := val.FieldType.Elem().Name()
-              if elemtype == "byte" {
-                
-              }else {
-                continue
-              }
-            case reflect.Map:
-              continue
-            case reflect.String:
-              valstr = "'" + value.String() + "'"
+         valstr = this.getFieldValueString(&val,&value)
+         if valstr == "" {
+            continue
          }
          if val.IsId {
             conditionList = append(conditionList,val.ColumnName + "=" + valstr)
@@ -580,8 +618,8 @@ func (this *DbSqlBuilder) Limit(limit int) *DbSqlBuilder {
    return this
 }
 
-func (this *DbSqlBuilder) FetchLazyField(fieldName []string) {
-   
+func (this *Moudle) FetchLazyField(structObj interface{} ,fieldName []string) {
+   this.fetchLazyField(structObj,fieldName)
 }
 
 func (this *DbSqlBuilder) FetchAll() []interface{} {
