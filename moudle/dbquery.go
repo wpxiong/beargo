@@ -228,7 +228,7 @@ func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value)
       }
 }
 
-func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string) {
+func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string,ts *Trans) {
    structName := reflect.TypeOf(structObj).Name()
    var tableInfo *DBTableInfo
    var ok bool
@@ -257,7 +257,7 @@ func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string) {
              panic("not find the table relation with the interface :" + structName)
          }
          newSqlBuilder.sqlQuery = sqlQuery
-         vallist := newSqlBuilder.fetchAll(nil)
+         vallist := newSqlBuilder.fetchAll(ts)
          log.Debug(vallist)
       }else {
          panic("not found fieldName db table name relation with field " + name)
@@ -619,7 +619,7 @@ func (this *DbSqlBuilder) Limit(limit int) *DbSqlBuilder {
 }
 
 func (this *Moudle) FetchLazyField(structObj interface{} ,fieldName []string) {
-   this.fetchLazyField(structObj,fieldName)
+   this.fetchLazyField(structObj,fieldName,nil)
 }
 
 func (this *DbSqlBuilder) FetchAll() []interface{} {

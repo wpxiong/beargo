@@ -111,3 +111,7 @@ func (this *Trans) Insert(structVal interface{} ) *DbSqlBuilder {
 func (this *Trans)  Delete(structVal interface{} ) {
   this.moudle.delete(structVal,this)
 }
+
+func (this *Trans)  FetchLazyField(structVal interface{},fieldName []string ) {
+  this.moudle.fetchLazyField(structVal,fieldName,this)
+}
