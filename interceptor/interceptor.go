@@ -68,22 +68,26 @@ func ProcessAfterinterceptor(context *appcontext.AppContext) bool {
 func AddInitinterceptor(context *appcontext.AppContext, funcMap map[string]InterceptorFunc){
    beforeinterceptorList :=  context.GetConfigValue(constvalue.BEFORE_interceptor_KEY,constvalue.DEFULT_BEFORE_interceptor).([]string)
    afterinterceptorList :=  context.GetConfigValue(constvalue.AFTER_interceptor_KEY,constvalue.DEFULT_AFTER_interceptor).([]string)
-   var beforeFuncList []InterceptorFunc = make([]InterceptorFunc ,0,0)
+   var beforeFuncList []InterceptorFunc = make([]InterceptorFunc,4)
+   var index int = 0
    for _,key := range beforeinterceptorList{
       val := funcMap[key]
       if val != nil {
-        beforeFuncList = append(beforeFuncList,val)
-      }
-   }
-   
-   var afterFuncList []InterceptorFunc = make([]InterceptorFunc ,0,0)
-   for _,key := range afterinterceptorList{
-      val := funcMap[key]
-      if val != nil {
-        afterFuncList = append(afterFuncList,val)
+        beforeFuncList = append(beforeFuncList[:index],val)
+        index+=1
       }
    }
    AddBeforeinterceptorList(beforeFuncList...)
+   
+   var afterFuncList []InterceptorFunc = make([]InterceptorFunc,2)
+   index = 0
+   for _,key := range afterinterceptorList{
+      val := funcMap[key]
+      if val != nil {
+        afterFuncList = append(afterFuncList[:index],val)
+        index+=1
+      }
+   }
    AddAfterinterceptorList(afterFuncList...)
 }
 

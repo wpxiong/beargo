@@ -120,11 +120,11 @@ func (ctx *AppConfigContext) LoadConfig() {
                   case string:
                      preval := ctx.ConfigParam[pamname].(string)
                      var list []string = make([]string,2)
-                     list = append(list,preval)
+                     list[0] = preval
                      if !isArray{
-                       list = append(list,pamval)
+                       list[1] = pamval
                      }else {
-                       list = append(list,pamvalList...)
+                       list = append(list[:1],pamvalList...)
                      }
                      ctx.ConfigParam[pamname] = list
                   case []string:

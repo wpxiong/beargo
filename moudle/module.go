@@ -477,8 +477,8 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
      tablenamestr := strings.ToLower(structName)     
      fieldNum := reflect.TypeOf(dbtable).NumField()
      tableInfo.FiledNameMap = make(map[string]ColumnInfo)
-     tableInfo.KeyFieldIndex = make([]int,0,0)
-     tableInfo.FieldList = make([]string,0,0)
+     tableInfo.KeyFieldIndex = make([]int,0)
+     tableInfo.FieldList = make([]string,0)
      if tableName == "" {
        tableInfo.TableName = tablenamestr
      }else {

@@ -109,9 +109,9 @@ func (this *DbSqlBuilder) fetchOne(ts *Trans) (interface{},bool) {
    var res []interface{}
    var rows *sql.Rows
    var result interface{}
-   vallist := make([]reflect.Value,0,0)
    var err error
    rows,err = this.moudle.DbProiver.Query(this.sqlQuery,ts)
+   vallist := make([]reflect.Value,0)
    defer rows.Close()
    if err != nil {
       log.Error(err)
@@ -146,8 +146,12 @@ func (this *Moudle) listField(list *[]interface{},tableInfo *DBTableInfo,obj *re
 }
 
 
-func (this *Moudle) checkInList(obj reflect.Value,list [] reflect.Value,tableinfo * DBTableInfo) (bool, *reflect.Value) {
+func (this *Moudle) checkInList(obj reflect.Value,list [] reflect.Value,size int ,tableinfo * DBTableInfo) (bool, *reflect.Value) {
+   var k int = 0
    for _,val := range list{
+      if k >= size && size >= 0{
+         break
+      }
       var theSame bool = true
       for _,keyIndex := range tableinfo.KeyFieldIndex {
         fieldVal1 := reflect.ValueOf(obj.Elem().Interface()).Field(keyIndex).Interface()
@@ -157,6 +161,7 @@ func (this *Moudle) checkInList(obj reflect.Value,list [] reflect.Value,tableinf
            break
         }
      }
+     k += 1
      if theSame {
         return true,&val
      }
@@ -174,6 +179,7 @@ func (this *DbSqlBuilder) processValueToInterface(valueList *[]reflect.Value) []
 }
 
 func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value) {
+     var k int = 0
      for rows.Next() {
           objtype := reflect.TypeOf(this.structObj)
           structObj := reflect.New(objtype)
@@ -195,7 +201,7 @@ func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value)
           if err := rows.Scan(columnObj...) ;err != nil {
             panic(err)
           }
-          if ok, objVal := this.moudle.checkInList(structObj,*vallist,this.tableInfo); ok {
+          if ok, objVal := this.moudle.checkInList(structObj,*vallist,k,this.tableInfo); ok {
               structObj = *objVal
               for k,joinObj :=  range joinStructObj {
                 columnInfo := this.tableInfo.FiledNameMap[strings.ToLower(this.structNameList[k])]
@@ -217,12 +223,13 @@ func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value)
                 }
              }
              *vallist = append(*vallist,structObj)
+             k += 1
           }
       }
 }
 
 func (this *DbSqlBuilder) fetchAll(ts *Trans) []interface{} {
-   vallist := make([]reflect.Value,0,0)
+   vallist := make([]reflect.Value,0)
    var rows *sql.Rows
    var err error
    rows,err = this.moudle.DbProiver.Query(this.sqlQuery,ts)
