@@ -229,7 +229,7 @@ func (this *DbSqlBuilder) processSelect(rows *sql.Rows,vallist *[]reflect.Value)
 }
 
 func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string,ts *Trans) {
-   structName := reflect.TypeOf(structObj).Name()
+   structName := reflect.TypeOf(structObj).Elem().Name()
    var tableInfo *DBTableInfo
    var ok bool
    if tableInfo,ok = this.DbTableInfoByStructName[structName]; !ok {
@@ -249,16 +249,40 @@ func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string,ts *
             } 
          }
          var sqlQuery string = "select * from " + table_info.TableName
+         var columnInfo ColumnInfo
          if columnName != "" {
-            columnInfo := tableInfo.FiledNameMap[columnName]
-            fieldVal := reflect.ValueOf(structObj).FieldByName(columnInfo.FieldName)
+            columnInfo = tableInfo.FiledNameMap[columnName]
+            fieldVal := reflect.ValueOf(structObj).Elem().FieldByName(columnInfo.FieldName)
             sqlQuery += " where " + refrencedcolumnName + " = "  + this.getFieldValueString(&columnInfo,&fieldVal)
          }else {
              panic("not find the table relation with the interface :" + structName)
          }
          newSqlBuilder.sqlQuery = sqlQuery
-         vallist := newSqlBuilder.fetchAll(ts)
-         log.Debug(vallist)
+         vallist := make([]reflect.Value,0)
+         var rows *sql.Rows
+         var err error
+         rows,err = this.DbProiver.Query(newSqlBuilder.sqlQuery,ts)
+         defer rows.Close()
+         if err != nil {
+            log.Error(err)
+             panic("SQL :[" + newSqlBuilder.sqlQuery + "] query error")
+         }else {
+            newSqlBuilder.processSelect(rows,&vallist)
+            fieldType ,_ := reflect.TypeOf(structObj).Elem().FieldByName(name)
+            switch  fieldType.Type.Kind() {
+               case reflect.Slice:
+                 nestedObj :=  reflect.ValueOf(structObj).Elem().FieldByName(name)
+                 for _,elem := range vallist {
+                    nestedObj.Set(reflect.Append(nestedObj,elem.Elem()))
+                 }
+               default:
+                 nestedObj :=  reflect.ValueOf(structObj).Elem().FieldByName(name)
+                 for _,elem := range vallist {
+                    nestedObj.Set(elem.Elem())
+                    break
+                }
+            }
+         }
       }else {
          panic("not found fieldName db table name relation with field " + name)
       }
