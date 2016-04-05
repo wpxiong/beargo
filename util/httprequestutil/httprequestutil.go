@@ -32,6 +32,20 @@ func MapMerge(dst, src url.Values) *url.Values{
     return &valuesMap
 }
 
+func processFileParameter(filesParameter map[string][]*multipart.FileHeader,appContext *appcontext.AppContext) {
+   appContext.FileList = make(map[string][]multipart.File)
+   for key,fileheaderlist := range filesParameter {
+      fileList := make([]multipart.File,0)
+      for _,fileheader := range fileheaderlist {
+        if file,ok := fileheader.Open();ok == nil {
+           fileList = append(fileList,file)
+        }
+      }
+      appContext.FileList[key] = fileList
+   }
+}
+
+
 func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
     var getParameter url.Values = appContext.Request.HttpRequest.URL.Query()
     var formParameter url.Values
@@ -74,7 +88,7 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
     }
     pam := reflect.ValueOf(appContext.Parameter).Interface()
     ConvertMapKeyToLower(&pam)
-    log.Debug(filesParameter)
+    processFileParameter(filesParameter,appContext)
 }
 
 

@@ -8,6 +8,7 @@ import (
   "github.com/wpxiong/beargo/webhttp"
   "reflect"
   "regexp"
+  "mime/multipart"
 )
 
 
@@ -37,6 +38,7 @@ type AppContext struct {
   Renderinfo     interface{}
   redirect       bool
   RedirectPath   string
+  FileList       map[string][]multipart.File
 }
 
 func (ctx *AppContext)  IsRedirect() bool{
@@ -120,11 +122,11 @@ func (ctx *AppConfigContext) LoadConfig() {
                   case string:
                      preval := ctx.ConfigParam[pamname].(string)
                      var list []string = make([]string,2)
-                     list = append(list,preval)
+                     list[0] = preval
                      if !isArray{
-                       list = append(list,pamval)
+                       list[1] = pamval
                      }else {
-                       list = append(list,pamvalList...)
+                       list = append(list[:1],pamvalList...)
                      }
                      ctx.ConfigParam[pamname] = list
                   case []string:
@@ -175,3 +177,20 @@ func (ctx *AppContext) Convert(valStr string,valType string) interface{} {
     }
 }
 
+func (ctx *AppContext)  DestoryAppContext() {
+   for _,fileheaderlist := range ctx.FileList {
+      for _,file := range fileheaderlist {
+        if err := file.Close(); err != nil {
+           log.Error(err)
+        }
+      }
+   }
+}
+
+func (ctx *AppContext) GetPostFileByParameterName(parameterName string) [] multipart.File{
+   if val,ok := ctx.FileList[parameterName] ;ok {
+      return val
+   }else {
+      return make([]multipart.File,0) 
+   }
+}

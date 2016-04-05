@@ -1,4 +1,4 @@
-package testprocess
+package main
 
 import (
   "github.com/wpxiong/beargo/log"
@@ -20,11 +20,15 @@ func AddJob(){
    }
 }
 
-func Test() {
+func TestMoudle() {
    log.InitLog()
    runtime.GOMAXPROCS(runtime.NumCPU())
    pro := process.New()
    pro.Init_Default()
    AddJob()
    process.StopWork()
+}
+
+func main(){
+  TestMoudle()
 }

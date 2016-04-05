@@ -174,6 +174,7 @@ func (rtp *RouteInfo ) CallMethod() {
             //500 Error
             RedirectTo500(appContext)
         }
+        appContext.DestoryAppContext()
     }()
     
     beforeFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.BEFORE_FUNC)

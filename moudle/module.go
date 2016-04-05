@@ -59,8 +59,10 @@ type DBTableInfo struct {
   DbSchema      string
   DbStuct       interface{}
   FiledNameMap  map[string] ColumnInfo
+  FieldList      []string
   DbTableExist  bool
   StructName    string
+  KeyFieldIndex []int
 }
 
 type RelationInfo struct {
@@ -82,6 +84,7 @@ type Moudle struct {
   DbProiver        DbProviderInterface
   connectionStatus bool
   RelationInfoList []RelationInfo
+  RelationMap      map[string]interface{}
 }
 
 
@@ -97,7 +100,7 @@ func (this *Moudle) initModuleInstance(){
    var connectionUrl string  
    switch this.DbDialect {
       case MYSQL :
-        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName;
+        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName + "?parseTime=true"
         this.DbProiver = &MysqlDBProvider{}
       case POSTGRESQL :
    }
@@ -106,6 +109,8 @@ func (this *Moudle) initModuleInstance(){
       log.Error("DB Connection Error!")
    }else {
       this.connectionStatus = true
+      this.DbProiver.SetMinConnection(constvalue.DEFAULT_MIN_DB_CONNECTION)
+      this.DbProiver.SetMaxConnection(constvalue.DEFAULT_MAX_DB_CONNECTION)
    }
 }
 
@@ -241,7 +246,7 @@ func (this *Moudle)  createRelation() map[string]interface{} {
 }
 
 
-func InSliceTableList (arr []string, val string) (bool){
+func InSliceStringList (arr []string, val string) (bool){
     for _, v := range(arr) {
        if v == val  { return true; } 
     }    
@@ -253,13 +258,13 @@ func searchTableInRelation(relationMap map[string]interface{},tableName string, 
       mapforegin :=  val.(map[string][]ForeignKeyInfo) 
       for _,val2 := range mapforegin {
          for _, info := range val2 {
-            if !InSliceTableList(*tableList,info.TableName) {
+            if !InSliceStringList(*tableList,info.TableName) {
                searchTableInRelation(relationMap,info.TableName,tableList)
             }
          }
       }
    }else {
-      if !InSliceTableList(*tableList,tableName) {
+      if !InSliceStringList(*tableList,tableName) {
         (*tableList) = append(*tableList,tableName)
       }
    }
@@ -270,7 +275,7 @@ func (this *Moudle) sortTable(relationMap map[string]interface{}) []*DBTableInfo
    tableList := make([]string,0,0)
    for _,Info := range this.DbTableInfoByTableName {
       searchTableInRelation(relationMap,Info.TableName,&tableList)
-      if !InSliceTableList(tableList,Info.TableName) {
+      if !InSliceStringList(tableList,Info.TableName) {
         tableList = append(tableList,Info.TableName)
       }
    }
@@ -281,20 +286,32 @@ func (this *Moudle) sortTable(relationMap map[string]interface{}) []*DBTableInfo
    return sortMap
 }
 
+func (this *Moudle)  TableExistsInDB(tableName string) bool{
+  if val,err := this.DbProiver.TableExistsInDB(tableName) ; err != nil {
+     panic(err)
+  }else {
+     return val
+  }
+}
+
 func (this *Moudle)  InitialDB(create bool) {
-  log.Debug("Initial DB start")
-  if create {
-    //create Table
-    var index int = 0
-    defer func() {
-        if err := recover(); err != nil {
-            log.Error("create database error")
-        }
-    }() 
-    sqlMap := this.createRelation()
-    sorttablemap := this.sortTable(sqlMap)
-    for _,Info := range sorttablemap {
-      this.droptable(Info.TableName)
+   log.Debug("Initial DB start")
+   var index int = 0
+   defer func() {
+      if err := recover(); err != nil {
+          log.Error("create database error")
+       }
+   }() 
+   sqlMap := this.createRelation()
+   this.RelationMap = sqlMap
+   sorttablemap := this.sortTable(sqlMap)
+   if create {
+      for _,Info := range sorttablemap {
+         this.droptable(Info.TableName)
+      }
+   }
+   
+   for _,Info := range sorttablemap {
       primaryKey := make([]string,0,0)
       var create_sql string = "create table " + Info.TableName + " ( "
       for _,column := range Info.FiledNameMap {
@@ -316,15 +333,17 @@ func (this *Moudle)  InitialDB(create bool) {
         }
         index ++
       }
-      create_sql = create_sql[0:len(create_sql)-2]
-      create_sql += "\n)"
-      this.createtable(Info.TableName,create_sql,primaryKey)
-    }
-    //this.createForeignKeyByRelation(sqlMap)
-  }else {
-    //check Table is exist in DB
-    
-  }
+      if create {
+        create_sql = create_sql[0:len(create_sql)-2]
+        create_sql += "\n)"
+        this.createtable(Info.TableName,create_sql,primaryKey)
+      }else if !this.TableExistsInDB(Info.TableName){  
+        create_sql = create_sql[0:len(create_sql)-2]
+        create_sql += "\n)"
+        this.createtable(Info.TableName,create_sql,primaryKey)
+      }
+   }
+   this.createForeignKeyByRelation(sqlMap)
 }
 
 
@@ -458,7 +477,8 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
      tablenamestr := strings.ToLower(structName)     
      fieldNum := reflect.TypeOf(dbtable).NumField()
      tableInfo.FiledNameMap = make(map[string]ColumnInfo)
-     
+     tableInfo.KeyFieldIndex = make([]int,0)
+     tableInfo.FieldList = make([]string,0)
      if tableName == "" {
        tableInfo.TableName = tablenamestr
      }else {
@@ -577,7 +597,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
               }
             case reflect.Slice:
               elemtype := field.Type.Elem().Name()
-              if elemtype == "byte" {
+              if elemtype == "uint8" {
                 columnInfo.SqlType = this.getDBByteArrayType(columnInfo.Length)
               }else {
                 // foreign key
@@ -600,6 +620,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
          
          if strings.ToLower(strings.Trim(id," ")) == "true" {
             columnInfo.IsId = true
+            tableInfo.KeyFieldIndex = append(tableInfo.KeyFieldIndex,i)
          }
          
          if strings.ToLower(strings.Trim(auto_increment," ")) == "true" {
@@ -618,7 +639,7 @@ func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname str
             columnInfo.Unique = true
          }
          tableInfo.FiledNameMap[strings.ToLower(field.Name)] = columnInfo
-         
+         tableInfo.FieldList = append(tableInfo.FieldList,strings.ToLower(field.Name))
          if referenced_type  != "" {
             relation := RelationInfo{ReferencedColumnName:referenced_column_name,DbTableName: tableInfo.TableName,ColumnName:column_name,StructName:columnInfo.RelationStructName}
             re_type,err := this.getRelationType(referenced_type)

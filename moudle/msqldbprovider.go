@@ -2,10 +2,12 @@ package moudle
 
 import (
   "github.com/wpxiong/beargo/log"
+  "github.com/wpxiong/beargo/constvalue"
   "database/sql"
   "strconv"
   "strings"
   "reflect"
+  "time"
   _ "github.com/go-sql-driver/mysql"
 )
 
@@ -15,8 +17,16 @@ func init() {
 
 type MysqlDBProvider struct {
    db *sql.DB
+   
 }
 
+func (this *MysqlDBProvider )  SetMinConnection(max int) {
+   this.db.SetMaxIdleConns(max)
+}
+
+func (this *MysqlDBProvider )  SetMaxConnection(max int) {
+   this.db.SetMaxOpenConns(max)
+}
 
 func (this *MysqlDBProvider ) Begin() (*sql.Tx,error) {
    return this.db.Begin()
@@ -26,7 +36,7 @@ func (this *MysqlDBProvider )  Commit(tx *sql.Tx) error {
    return tx.Commit()
 }
 
-func (this *MysqlDBProvider )  Close() error{
+func (this *MysqlDBProvider )  Close() error {
    return this.db.Close()
 }
 
@@ -39,14 +49,22 @@ func (this *MysqlDBProvider ) ConnectionDb(dburl string) error {
   return err
 }
 
-func (this *MysqlDBProvider ) Query(sql string) (*sql.Rows ,error){
+func (this *MysqlDBProvider ) Query(sql string,ts *Trans) (*sql.Rows ,error){
    log.Info(sql)
-   return this.db.Query(sql)
+   if ts == nil {
+     return this.db.Query(sql)
+   }else {
+     return ts.tx.Query(sql)
+   }
 }
 
-func (this *MysqlDBProvider ) Insert(sql string) (sql.Result ,error){
+func (this *MysqlDBProvider ) Insert(sql string,ts *Trans) (sql.Result ,error){
    log.Info(sql)
-   return this.db.Exec(sql)
+   if ts == nil {
+     return this.db.Exec(sql)
+   }else {
+     return ts.tx.Exec(sql)
+   }
 }
 
 func (this *MysqlDBProvider ) CreateTable(tableName string,sqlstr string,primaryKey []string) (sql.Result ,error) {
@@ -74,10 +92,24 @@ func  (this *MysqlDBProvider ) CreatePrimaryKey(tableName string,keyList []strin
    }
 }
 
-func (this *MysqlDBProvider ) ExecuteSQL(sql string) (sql.Result ,error){
+func (this *MysqlDBProvider ) ExecuteSQL(sql string,ts *Trans) (sql.Result ,error){
    log.Info(sql)
-   return this.db.Exec(sql)
+   if ts == nil {
+     return this.db.Exec(sql)
+   }else {
+     return ts.tx.Exec(sql)
+   }
 }
+
+func (this *MysqlDBProvider ) Update(sql string,ts *Trans) (sql.Result ,error){
+   log.Info(sql)
+   if ts == nil {
+     return this.db.Exec(sql)
+   }else {
+     return ts.tx.Exec(sql)
+   }
+}
+
 
 func (this *MysqlDBProvider ) DropTable(tableName string) (sql.Result ,error){
    var sql string = "drop table if exists " + tableName + ";"
@@ -145,6 +177,57 @@ func (this *MysqlDBProvider )  GetDBBoolType() string {
   return "CHAR(1)"
 }
 
+func (this *MysqlDBProvider ) GetInsertDBComplex64Sql(val complex128 ) string {
+  return "'" + strconv.FormatFloat(real(val),'f', -1, 32) +"," + strconv.FormatFloat(imag(val),'f', -1, 32) + "'"
+}
+
+func (this *MysqlDBProvider ) GetInsertDBComplex128Sql(val complex128 ) string {
+   return "'" + strconv.FormatFloat(real(val),'f', -1, 64) +"," + strconv.FormatFloat(imag(val),'f', -1, 64) + "'"
+}
+
+func (this *MysqlDBProvider )   GetInsertDBTimeSql(ti time.Time) string {
+   return "'" + ti.Format(constvalue.DEFAULT_TIME_FORMATE) + "'"
+}
+
+func (this *MysqlDBProvider )   AppendScanComplexField(list *[]interface{}) {
+    var complexField string 
+    (*list) = append(*list,&complexField)
+}
+
+func (this *MysqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interface{},ts *Trans) {
+ log.Debug(sql)
+ if ts == nil {
+    if smt,err := this.db.Prepare(sql);err == nil {
+       if _, err1 := smt.Exec(parameter...);err1 != nil {
+          panic(err)
+       }
+    }else {
+       panic(err)
+    }
+ }else {
+    if smt,err := this.db.Prepare(sql);err == nil {
+       smt = ts.tx.Stmt(smt)
+       if _, err1 := smt.Exec(parameter...);err1 != nil {
+          panic(err)
+       }
+    }else {
+       panic(err)
+    }
+ }
+}
+
+   
+func (this *MysqlDBProvider )  TableExistsInDB(tableName string) (bool,error) {
+   var sql string = "show tables like '" + tableName + "';"
+   log.Info(sql)
+   rows,err := this.db.Query(sql)
+   if err != nil {
+      return false,err
+   }else {
+      return rows.Next(),err
+   }
+}
+   
 func (this *MysqlDBProvider )  GetDBStringType(length int ) string {
   if length < 65535 {
      return "VARCHAR"
@@ -171,7 +254,9 @@ func (this *MysqlDBProvider )  GetDBByteArrayType(length int) string {
   }
 }
 
-
+func (this *MysqlDBProvider )  LimitSql( limit int ) string {
+   return " LIMIT "  + strconv.Itoa(limit)
+}
 
 func (this *MysqlDBProvider )  CreateDefaultValue(defaultValue interface{}) string {
   if defaultValue == nil {

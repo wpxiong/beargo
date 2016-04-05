@@ -111,6 +111,8 @@ func initDefaultInterceptorFuncMap() map[string]interceptor.InterceptorFunc {
   funcMap[constvalue.Redirectinterceptor] =  redirectinterceptor.Redirectinterceptor
   funcMap[constvalue.Sessioninterceptor] =  interceptor.Sessioninterceptor
   funcMap[constvalue.Xsrfinterceptor] =  interceptor.Xsrfinterceptor
+  funcMap[constvalue.DBtransactionStartinterceptor] =  interceptor.DBtransactionStartinterceptor
+  funcMap[constvalue.DBtransactionEndinterceptor] =  interceptor.DBtransactionEndinterceptor
   return funcMap
 }
 

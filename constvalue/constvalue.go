@@ -44,6 +44,8 @@ const (
   Redirectinterceptor = "Redirectinterceptor"
   Sessioninterceptor = "Sessioninterceptor"
   Xsrfinterceptor = "Xsrfinterceptor"
+  DBtransactionEndinterceptor = "DBtransactionEndinterceptor"
+  DBtransactionStartinterceptor = "DBtransactionStartinterceptor"
   
   MemorySessionProvider = "MemorySessionProvider"
   
@@ -83,6 +85,10 @@ const (
   
   DEFAULT_TIME_FORMATE = "2006-01-02 15:04:06"
   
+  
+  DEFAULT_MAX_DB_CONNECTION = 100
+  DEFAULT_MIN_DB_CONNECTION = 5
+  
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"
@@ -95,8 +101,8 @@ var DEFULT_BEFORE_interceptor []string
 var DEFULT_AFTER_interceptor []string
 
 func init(){
-  DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor","Sessioninterceptor","Xsrfinterceptor"}
-  DEFULT_AFTER_interceptor = []string {"Redirectinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
+  DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor","Sessioninterceptor","Xsrfinterceptor","DBtransactionStartinterceptor"}
+  DEFULT_AFTER_interceptor = []string {"Redirectinterceptor","DBtransactionEndinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
   
   DEFAULT_ERROR_403_PATH = strings.Replace(DEFAULT_ERROR_403_PATH, "/", string(os.PathSeparator), -1)
   DEFAULT_ERROR_404_PATH = strings.Replace(DEFAULT_ERROR_404_PATH, "/", string(os.PathSeparator), -1)
