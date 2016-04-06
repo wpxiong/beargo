@@ -99,6 +99,8 @@ const (
   DEFAULT_DB_SESSION_NAME = "default_db_session"
   
   DB_CONFIG_SECTION = "DB_CONFIG"
+  
+  DEFAULT_LISTEN_PORT = 9010
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"
