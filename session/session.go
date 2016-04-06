@@ -10,36 +10,36 @@ func init() {
 }
 
 type SessionInfo struct {
-  sessionId  string
-  sessionInvalidateTime  time.Time
-  isInMemory             bool
+  SessionId  string
+  SessionInvalidateTime  time.Time
+  IsSerialized             bool
 }
 
 type Session struct {
-  sessionId  string
-  sessionValue           map[string] interface{}
+  SessionId  string
+  SessionValue           map[string] interface{}
 }
 
 
 func (this *Session) InitSession(id string){
-  this.sessionId = id
-  this.sessionValue = make(map[string] interface{})
+  this.SessionId = id
+  this.SessionValue = make(map[string] interface{})
 }
 
 func (this *SessionInfo) UpdateSession(timeOut int){
-  this.sessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
+  this.SessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
 }
 
 func (this *SessionInfo) InitSession(timeOut int) {
-  this.sessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
-  this.isInMemory = true
+  this.SessionInvalidateTime = time.Now().Add(time.Second * time.Duration(timeOut))
+  this.IsSerialized = false
 }
 
 func (this *Session) SaveSessionValue(valueId string, obj interface{}){
-  this.sessionValue[valueId] = obj
+  this.SessionValue[valueId] = obj
 }
 
 func (this *Session) GetSessionValue(valueId string)  interface{} {
-  return this.sessionValue[valueId] 
+  return this.SessionValue[valueId] 
 }
 

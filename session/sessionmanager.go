@@ -27,14 +27,17 @@ type sessionManager struct {
   SessionLifeTime  int64 //second
   SessionProviderMap  map[string] SessionProvider
   sessionAccess  *sync.Mutex
-  sessionInfoMap map[string]SessionInfo   
 }
 
 var sessionmanager *sessionManager = nil
 
 func initSessionProvider (session_manager *sessionManager,provider SessionProvider) {
   session_manager.Sessionprovider = provider
-  provider.InitProvider()
+  provider.InitProvider(session_manager.SessionLifeTime)
+}
+
+func GetSessionManager() *sessionManager{
+   return sessionmanager
 }
 
 func CreateSessionManager(context *appcontext.AppContext,sessionProviderMap map[string]SessionProvider ){
@@ -48,7 +51,7 @@ func CreateSessionManager(context *appcontext.AppContext,sessionProviderMap map[
         }
      }
      var provider string = context.GetConfigValue(constvalue.SESSION_PROVIDER_KEY,constvalue.DEFAULT_SESSION_PROVIDER).(string)
-     sessionmanager = &sessionManager{sessionInfoMap:make(map[string]SessionInfo), CookieName:constvalue.SESSION_NAME,SessionLifeTime:session_timeout,sessionAccess:&sync.Mutex{},SessionProviderMap:sessionProviderMap}
+     sessionmanager = &sessionManager{CookieName:constvalue.SESSION_NAME,SessionLifeTime:session_timeout,sessionAccess:&sync.Mutex{},SessionProviderMap:sessionProviderMap}
      if sessionProviderMap[provider] != nil {
         initSessionProvider(sessionmanager,sessionProviderMap[provider])
      }else {
@@ -68,22 +71,22 @@ func generateId() string {
 }
 
 func StartSessionManager() {
+   sessionmanager.Sessionprovider.DeserializeSession()
    go sessionmanager.startSessionManagerListener()
 }
 
 func (this* sessionManager ) startSessionManagerListener() {
    for true {
-      for key,value := range this.sessionInfoMap {
-         if value.sessionInvalidateTime.Before(time.Now()) {
-            this.sessionAccess.Lock()
-            delete(this.sessionInfoMap,key)
-            this.Sessionprovider.DeleteSession(key)
-            this.sessionAccess.Unlock()
-         }
-      }
+      this.Sessionprovider.ClearSession(this.sessionAccess)
       time.Sleep(time.Second * time.Duration(SESSION_SCAN_TIME))
    }
 }
+
+
+func StopSessionManager() {
+   sessionmanager.Sessionprovider.SerializeSession()
+}
+
 
 func (this *sessionManager ) getSession(sessionId string) Session {
    var res bool = true
@@ -93,39 +96,35 @@ func (this *sessionManager ) getSession(sessionId string) Session {
    res = this.Sessionprovider.FindSessionById(sessionId)
    this.sessionAccess.Unlock()
    if !res {
-     sess = this.createNewSession()
+     sess = this.CreateNewSession()
    }else {
      sess,err = this.Sessionprovider.LoadSessionById(sessionId)
      if err != nil {
         log.Error("Load Session Error")
-        sess = this.createNewSession()
+        sess = this.CreateNewSession()
      }
    }
-   sessionInfo := this.sessionInfoMap[sess.sessionId]
-   sessionInfo.sessionInvalidateTime = getInvalidateTime(this.SessionLifeTime)
    return sess
 }
 
-func getInvalidateTime(timeOut int64 ) time.Time {
-   return time.Now().Add(time.Second * time.Duration(timeOut))
-}
+
 
 func  NewSession(r *http.Request , w http.ResponseWriter)  Session{
   var sess Session
   cookie, err := r.Cookie(sessionmanager.CookieName)
   if err != nil || cookie.Value == "" {
       sess = sessionmanager.newSession()
-      cookie := http.Cookie{Name: sessionmanager.CookieName, Value: url.QueryEscape(sess.sessionId), Path: "/", HttpOnly: true, MaxAge: int(sessionmanager.SessionLifeTime)}
+      cookie := http.Cookie{Name: sessionmanager.CookieName, Value: url.QueryEscape(sess.SessionId), Path: "/", HttpOnly: true, MaxAge: int(sessionmanager.SessionLifeTime)}
       http.SetCookie(w, &cookie)
   } else {
       sid, _ := url.QueryUnescape(cookie.Value)
       sess = sessionmanager.getSession(sid)
       //update cookie
-      if sess.sessionId != sid {
+      if sess.SessionId != sid {
           cookie.Path = "/"
           cookie.MaxAge = int(sessionmanager.SessionLifeTime)
           cookie.HttpOnly = true
-          cookie.Value = url.QueryEscape(sess.sessionId)
+          cookie.Value = url.QueryEscape(sess.SessionId)
           http.SetCookie(w, cookie)
       }
   }
@@ -134,11 +133,11 @@ func  NewSession(r *http.Request , w http.ResponseWriter)  Session{
 
 
 func (this *sessionManager ) newSession() Session {
-   sess := this.createNewSession()
+   sess := this.CreateNewSession()
    return sess
 }
 
-func (this *sessionManager ) createNewSession() Session {
+func (this *sessionManager ) CreateNewSession() Session {
    var sessionIdString string
    var res bool = true
    this.sessionAccess.Lock()
@@ -152,7 +151,10 @@ func (this *sessionManager ) createNewSession() Session {
      log.Error("Create Session Error")
      panic("Create Session Error")
    }
-   sessiontimeout := getInvalidateTime(this.SessionLifeTime)
-   this.sessionInfoMap[sess.sessionId] = SessionInfo{sessionId:sessionIdString,isInMemory:true,sessionInvalidateTime:sessiontimeout}
    return sess
+}
+
+
+func GetInvalidateTime(timeOut int64 ) time.Time {
+   return time.Now().Add(time.Second * time.Duration(timeOut))
 }

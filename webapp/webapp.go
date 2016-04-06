@@ -289,6 +289,11 @@ func (web *WebApplication) Start() {
 }
 
 
+func (web *WebApplication) Stop() {
+    web.control <- 1
+    session.StopSessionManager()
+}
+
 func InitRequestAndResponseAppContext(request *webhttp.HttpRequest , response *webhttp.HttpResponse)  *appcontext.AppContext {
   var appContext *appcontext.AppContext = &appcontext.AppContext{}
   appContext.Request = request
