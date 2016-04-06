@@ -171,6 +171,8 @@ func (rtp *RouteInfo ) CallMethod() {
     defer func() {
         if err := recover(); err != nil {
             log.Error("Call Controller Method Error")
+            //DB Rollback
+            dbRollBack(appContext)
             //500 Error
             RedirectTo500(appContext)
         }
@@ -198,6 +200,18 @@ func (rtp *RouteInfo ) CallMethod() {
     }
 }
 
+func dbRollBack(app *appcontext.AppContext) {
+   log.Debug("DBtransaction RollBack")
+   if  app.Trans != nil {
+       for key,trans := range app.Trans {
+          err := trans.Rollback()
+          if err != nil {
+            log.ErrorArray(key,err)
+          }
+       }
+   }
+   app.Trans = nil
+}
 
 func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode, paraList *[][]ParaInfo) (bool, controller.ControllerMethod,*reflect.Value,*reflect.Method,reflect.Type,string) {
    *paraList = (append(*paraList,[]ParaInfo{}))

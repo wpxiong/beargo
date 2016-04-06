@@ -82,16 +82,15 @@ type Moudle struct {
   DbTableInfoByTableName       map[string]*DBTableInfo
   DbTableInfoByStructName      map[string]*DBTableInfo
   DbProiver        DbProviderInterface
-  connectionStatus bool
+  ConnectionStatus bool
   RelationInfoList []RelationInfo
   RelationMap      map[string]interface{}
 }
 
-
 func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
-   module :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword,RelationInfoList:make([]RelationInfo,0,0)}
-   module.initModuleInstance()
-   return module
+   moudle :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword,RelationInfoList:make([]RelationInfo,0,0)}
+   moudle.initModuleInstance()
+   return moudle
 }
 
 func (this *Moudle) initModuleInstance(){
@@ -108,7 +107,7 @@ func (this *Moudle) initModuleInstance(){
    if err != nil {
       log.Error("DB Connection Error!")
    }else {
-      this.connectionStatus = true
+      this.ConnectionStatus = true
       this.DbProiver.SetMinConnection(constvalue.DEFAULT_MIN_DB_CONNECTION)
       this.DbProiver.SetMaxConnection(constvalue.DEFAULT_MAX_DB_CONNECTION)
    }
@@ -469,7 +468,7 @@ func (this *Moudle)  getRelationType(typestr string) (DbRelationType,error) {
 
 
 func (this *Moudle) addTable(dbtable interface{},tableName string,schemaname string){
-  if !this.connectionStatus {
+  if !this.ConnectionStatus {
      return 
   }else {
      tableInfo := DBTableInfo{}

@@ -15,6 +15,7 @@ import (
   "github.com/wpxiong/beargo/render/template"
   "github.com/wpxiong/beargo/session"
   "github.com/wpxiong/beargo/session/provider"
+  "github.com/wpxiong/beargo/moudle"
   "github.com/wpxiong/beargo/interceptor/redirectinterceptor"
   "strconv"
   "time"
@@ -181,7 +182,36 @@ func processRequest(w http.ResponseWriter, r *http.Request){
     }
 }
 
+func startDBConfig(cfx *appcontext.AppContext){
+   dbconflist := cfx.ConfigContext.GetDBConfigParameter()
+   cfx.DBSession = make(map[string]* moudle.Moudle,len(dbconflist))
+   for _,dbconf := range dbconflist {
+      var dialect_type moudle.DbDialectType = moudle.MYSQL
+      var notype bool = false
+      switch dbconf.Dailect_Type {
+         case "sqlite":
+           dialect_type = moudle.SQLITE
+         case "mysql":
+           dialect_type = moudle.MYSQL
+         case "postgresql":
+           dialect_type = moudle.POSTGRESQL
+         default:
+           notype = true
+      }
+      if !notype {
+         dbsession := moudle.CreateModuleInstance(dialect_type,dbconf.DB_Name,dbconf.DB_Url,dbconf.DB_User,dbconf.DB_Pass)
+         if dbsession.ConnectionStatus {
+            cfx.DBSession[dbconf.DB_Session_Name]  = dbsession
+         }else {
+            panic(" DB " + dbconf.DB_Session_Name + " Connection Error")
+         }
+      }
+   }
+}
+
 func startProcess(web *WebApplication){
+    //start DB
+    startDBConfig(web.AppContext)
     requestTimeout := web.AppContext.GetConfigValue(constvalue.REQUEST_TIMEOUT_KEY,constvalue.DEFAULT_REQUEST_TIMEOUT).(string)
     var resqTimeout,respTimeout int
     var err error

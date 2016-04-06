@@ -160,7 +160,3 @@ func GetTimeValue(str string) (time.Time,error) {
     log.Debug(err)
     return t,err
 }
-
-
-
-
