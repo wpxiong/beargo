@@ -12,7 +12,7 @@ func init() {
 func DBtransactionEndinterceptor(app *appcontext.AppContext) bool {
    log.Debug("DBtransactionEndinterceptor Start")
    if app.Trans != nil {
-      errorlist := make([]error,len(app.Trans),0)
+      errorlist := make([]error,len(app.Trans))
       var k int = 0
       for key,trans := range app.Trans {
          err := trans.Commit()
