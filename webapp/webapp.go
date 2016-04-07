@@ -213,9 +213,13 @@ func startDBConfig(cfx *appcontext.AppContext){
    }
 }
 
+
+func (web *WebApplication) InitDB(){
+   startDBConfig(web.AppContext)
+}
+
+    
 func startProcess(web *WebApplication){
-    //start DB
-    startDBConfig(web.AppContext)
     requestTimeout := web.AppContext.GetConfigValue(constvalue.REQUEST_TIMEOUT_KEY,constvalue.DEFAULT_REQUEST_TIMEOUT).(string)
     var resqTimeout,respTimeout int
     var err error
@@ -320,3 +324,11 @@ func InitRequestAndResponseAppContext(request *webhttp.HttpRequest , response *w
   return appContext
 }
 
+func (web *WebApplication) GetDefaultDB() *moudle.Moudle {
+   return  web.AppContext.GetDefaultDB()
+}
+
+
+func (web *WebApplication) GetDBByName(dbname string) *moudle.Moudle {
+   return  web.AppContext.GetDBByName(dbname)
+}

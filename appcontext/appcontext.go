@@ -248,3 +248,35 @@ func (ctx *AppConfigContext) GetDBConfigParameter() []DBConnectionInfo {
 }
 
 
+func (ctx *AppContext) GetDefaultDB() *moudle.Moudle {
+   for _,val :=  range ctx.DBSession {
+      return val
+   }
+   return nil
+}
+
+
+func (ctx *AppContext) GetDBByName(dbname string) *moudle.Moudle {
+   if val,ok := ctx.DBSession[dbname]; ok {
+      return val
+   }else{
+      return nil
+   }
+}
+
+
+func (ctx *AppContext) GetDefaultDBTransaction() *moudle.Trans {
+   for _,val :=  range ctx.Trans {
+      return val
+   }
+   return nil
+}
+
+
+func (ctx *AppContext) GetDBTranscationByName(dbname string) *moudle.Trans {
+   if val,ok := ctx.Trans[dbname]; ok {
+      return val
+   }else{
+      return nil
+   }
+}
