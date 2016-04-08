@@ -54,7 +54,7 @@ func startCommanListener(web *WebApplication){
    command.webapp = web
    rpc.Register(command)
 
-   tcpAddr, err := net.ResolveTCPAddr("tcp", ":" + strconv.Itoa(constvalue.DEFAULT_LISTEN_PORT))
+   tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:" + strconv.Itoa(constvalue.DEFAULT_LISTEN_PORT))
    checkError(err)
 
    listener, err := net.ListenTCP("tcp", tcpAddr)

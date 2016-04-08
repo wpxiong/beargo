@@ -39,11 +39,13 @@ type RenderInfo struct {
    TemplateList      map[string]*webtemplate.Template
    TemplateCount     int
    OutPutData        interface{}
+   ErrorInfo         map[string] []string
    UrlPath           string
 }
 
 func (this *RenderInfo) InitRenderInfo(app *appcontext.AppContext) {
    this.TemplateList = make(map[string]*webtemplate.Template)
+   this.ErrorInfo = make(map[string][]string)
    path := app.UrlPath
    if strings.HasPrefix(app.UrlPath,"/"){
      path = app.UrlPath[1:]
@@ -68,7 +70,7 @@ func processRender(param interface{}) interface{} {
    }
    var err error = errors.New("Template File is not Found")
    if firstTemplate != nil {
-      err = firstTemplate.Render(renderInfo.Writer,filepathList,renderInfo.OutPutData)
+      err = firstTemplate.Render(renderInfo.Writer,filepathList,renderInfo.OutPutData,renderInfo.ErrorInfo)
    }
    if err != nil {
       log.Error("Render Page Failture")
@@ -80,7 +82,7 @@ func processRender(param interface{}) interface{} {
 }
 
 
-func (this *RenderInfo) RenderProcess(data interface{}) interface{} {
+func (this *RenderInfo) RenderProcess() interface{} {
     log.Debug("RenderProcess Start")
     if rendermanager.useProcess {
        workjob := &process.WorkJob{ Parameter : this }

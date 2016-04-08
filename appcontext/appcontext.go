@@ -53,6 +53,7 @@ type AppContext struct {
   FileList       map[string][]multipart.File
   Trans          map[string]* moudle.Trans
   DBSession      map[string]* moudle.Moudle
+  ErrorInfo      map[string] []string
 }
 
 func (ctx *AppContext)  IsRedirect() bool{
@@ -212,6 +213,7 @@ func (ctx *AppContext) AddConvertFunctiont(paramType string,function ConvertFunc
 func (ctx *AppContext) CopyAppContext(frmctx *AppContext) {
    ctx.Data = make(map[interface{}]interface{})
    ctx.ConfigContext = frmctx.ConfigContext
+   ctx.ErrorInfo = make(map[string][]string)
    ctx.DBSession = frmctx.DBSession
 }
 
@@ -279,4 +281,27 @@ func (ctx *AppContext) GetDBTranscationByName(dbname string) *moudle.Trans {
    }else{
       return nil
    }
+}
+
+func (ctx *AppContext) SetError(errorKey string,errorMessage string)  {
+   if errorList,ok := ctx.ErrorInfo[errorKey];!ok {
+      errorList = make([]string,1)
+      errorList[0] = errorMessage
+      ctx.ErrorInfo[errorKey] = errorList
+   }else {
+      errorList = append(errorList,errorMessage)
+      ctx.ErrorInfo[errorKey] = errorList
+   }
+}
+
+
+func (ctx *AppContext) ClearError(errorKey string)  {
+   if _,ok := ctx.ErrorInfo[errorKey];ok {
+      ctx.ErrorInfo[errorKey] = make([]string,0)
+   }
+}
+
+
+func (ctx *AppContext) ClearAllError()  {
+   ctx.ErrorInfo = make(map[string][]string)
 }
