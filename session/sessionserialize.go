@@ -55,9 +55,6 @@ func DeserializeSessionInfo(sessionInfoStr string) *SessionInfo {
 func DeserializeSession(sessionStr string) *Session {
     session := Session{}
     byteArray, err := base64.StdEncoding.DecodeString(sessionStr)
-    log.Debug("xxxx")
-    log.Debug(err)
-    
     if err != nil { 
        log.Error(err)
        return nil

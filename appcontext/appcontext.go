@@ -54,6 +54,8 @@ type AppContext struct {
   Trans          map[string]* moudle.Trans
   DBSession      map[string]* moudle.Moudle
   ErrorInfo      map[string] []string
+  UseLayout    bool
+  LayoutName   string
 }
 
 func (ctx *AppContext)  IsRedirect() bool{
@@ -304,4 +306,10 @@ func (ctx *AppContext) ClearError(errorKey string)  {
 
 func (ctx *AppContext) ClearAllError()  {
    ctx.ErrorInfo = make(map[string][]string)
+}
+
+
+func (ctx *AppContext) SetLayoutBaseName(baseName string )  {
+   ctx.UseLayout = true
+   ctx.LayoutName = baseName
 }

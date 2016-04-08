@@ -24,7 +24,7 @@ type  Indform struct{
 
 
 
-func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepathList []string,output interface{},errorInfo map[string][]string) error {
+func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepathList []string,output interface{},errorInfo map[string][]string,useLayout bool,layoutName string) error {
    log.Debug("RenderHTMLTemplate Start")
    tmpl := template.Must(template.ParseFiles(filepathList...))
    zeroValue := reflect.Value{}
@@ -36,8 +36,12 @@ func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepat
          }
       case reflect.Struct:
    }
-   log.Debug(output)
-   err := tmpl.Execute((*writer),output)
+   var err error
+   if useLayout == true {
+      err = tmpl.ExecuteTemplate((*writer),layoutName, output)
+   }else {
+      err = tmpl.Execute((*writer),output)
+   }
    if err != nil {
       log.ErrorArray("Render Page Error. Page:" , filepathList)
    }

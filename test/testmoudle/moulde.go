@@ -96,7 +96,6 @@ func Testmoudle1() {
    for _,val := range list {
       usr := val.(UserInfo)
       moudleInstance.FetchLazyField(&usr,[]string{"Goup"})
-      log.Debug(usr)
    }
    
    var ts *moudle.Trans = moudleInstance.Begin()

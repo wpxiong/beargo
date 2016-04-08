@@ -41,6 +41,8 @@ type RenderInfo struct {
    OutPutData        interface{}
    ErrorInfo         map[string] []string
    UrlPath           string
+   UseLayout    bool
+   LayoutName   string
 }
 
 func (this *RenderInfo) InitRenderInfo(app *appcontext.AppContext) {
@@ -50,7 +52,6 @@ func (this *RenderInfo) InitRenderInfo(app *appcontext.AppContext) {
    if strings.HasPrefix(app.UrlPath,"/"){
      path = app.UrlPath[1:]
    }
-   log.Debug(getManager().pagetemplateList)
    this.TemplateList[app.UrlPath] =  getManager().pagetemplateList[path]
 }
 
@@ -60,6 +61,7 @@ func processRender(param interface{}) interface{} {
    size := len(renderInfo.TemplateList)
    filepathList := make([]string,0,size)
    var firstTemplate *webtemplate.Template 
+   
    for _,temp := range renderInfo.TemplateList {
       if firstTemplate == nil && temp != nil {
          firstTemplate = temp
@@ -68,9 +70,17 @@ func processRender(param interface{}) interface{} {
         filepathList = append(filepathList, DEFAULT_TEMPLATE_FOLDER[1:]  +  temp.FilePath)
       }
    }
+   if renderInfo.UseLayout {
+     for _,tmpfile := range rendermanager.layouttemplateList {
+       filepathList = append(filepathList, DEFAULT_TEMPLATE_FOLDER[1:]  +  tmpfile.FilePath)
+     }
+     for _,tmpfile := range rendermanager.includetemplateList {
+       filepathList = append(filepathList, DEFAULT_TEMPLATE_FOLDER[1:]  +  tmpfile.FilePath)
+     }
+   }
    var err error = errors.New("Template File is not Found")
    if firstTemplate != nil {
-      err = firstTemplate.Render(renderInfo.Writer,filepathList,renderInfo.OutPutData,renderInfo.ErrorInfo)
+      err = firstTemplate.Render(renderInfo.Writer,filepathList,renderInfo.OutPutData,renderInfo.ErrorInfo,renderInfo.UseLayout,renderInfo.LayoutName)
    }
    if err != nil {
       log.Error("Render Page Failture")
