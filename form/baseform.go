@@ -11,6 +11,6 @@ func init() {
 
 
 type BaseForm struct {
-   Error map[string][]string
+   
 }
 

@@ -2,9 +2,7 @@ package webtemplate
 
 import (
   "github.com/wpxiong/beargo/log"
-  "github.com/wpxiong/beargo/form"
   "net/http"
-  "reflect"
   "html/template"
 )
 
@@ -19,7 +17,6 @@ type HtmlTemplate struct {
 type  Indform struct{
   Name   string
   Password  string
-  form.BaseForm
 }
 
 
@@ -27,15 +24,6 @@ type  Indform struct{
 func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepathList []string,output interface{},errorInfo map[string][]string,useLayout bool,layoutName string) error {
    log.Debug("RenderHTMLTemplate Start")
    tmpl := template.Must(template.ParseFiles(filepathList...))
-   zeroValue := reflect.Value{}
-   switch reflect.TypeOf(output).Kind() {
-      case reflect.Ptr:
-         errorField := reflect.ValueOf(output).Elem().FieldByName("Error")
-         if errorField != zeroValue  && errorField.CanSet() {
-            errorField.Set(reflect.ValueOf(errorInfo))
-         }
-      case reflect.Struct:
-   }
    var err error
    if useLayout == true {
       err = tmpl.ExecuteTemplate((*writer),layoutName, output)
