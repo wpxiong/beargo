@@ -54,6 +54,7 @@ type AppContext struct {
   Trans          map[string]* moudle.Trans
   DBSession      map[string]* moudle.Moudle
   ErrorInfo      map[string] []string
+  RenderData     map[string] interface{}
   UseLayout    bool
   LayoutName   string
 }
@@ -216,6 +217,7 @@ func (ctx *AppContext) CopyAppContext(frmctx *AppContext) {
    ctx.Data = make(map[interface{}]interface{})
    ctx.ConfigContext = frmctx.ConfigContext
    ctx.ErrorInfo = make(map[string][]string)
+   ctx.RenderData = make(map[string]interface{})
    ctx.DBSession = frmctx.DBSession
 }
 
@@ -296,6 +298,9 @@ func (ctx *AppContext) SetError(errorKey string,errorMessage string)  {
    }
 }
 
+func (ctx *AppContext) SetRenderData(key string, renderdata interface{})  {
+    ctx.RenderData[key] = renderdata
+}
 
 func (ctx *AppContext) ClearError(errorKey string)  {
    if _,ok := ctx.ErrorInfo[errorKey];ok {

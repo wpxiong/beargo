@@ -6,20 +6,32 @@ import (
   "github.com/wpxiong/beargo/session/provider"
   "github.com/wpxiong/beargo/appcontext"
   "github.com/wpxiong/beargo/constvalue"
+  "encoding/gob"
   "time"
 )
 
+type User struct {
+  UserId int `id:"true"   auto_increment:"true"`
+  Email   string  `notnull:"true"     length:"128" `
+  Password  string  `notnull:"true"     length:"128" `
+}
+
+func testRe(registVal interface {}){
+  gob.Register(registVal)
+}
 
 func TestSession() {
    log.InitLogWithLevel("Debug")
+ 
    config := appcontext.AppConfigContext{Port :9001,ConfigPath : "./setting.conf"}
    var appCon appcontext.AppContext = appcontext.AppContext{ ConfigContext :  &config}
    sessionProviderMap := make(map[string]session.SessionProvider)
    sessionProviderMap[constvalue.DEFAULT_SESSION_PROVIDER] = &provider.MemorySessionProvider{}
    session.CreateSessionManager(&appCon,sessionProviderMap)
    sessmanager := session.GetSessionManager()
+   sessmanager.SessionValueStructName["User"] = User{} 
    sess := sessmanager.CreateNewSession()
-   sess.SaveSessionValue("test","xiongwenping")
+   sess.SaveSessionValue("test", User{UserId:1,Email:"xiongwenping",Password:"xxxxx"})
    sess = sessmanager.CreateNewSession()
    session.StartSessionManager()
    sess.SaveSessionValue("test2",23)

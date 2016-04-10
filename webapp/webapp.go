@@ -48,6 +48,7 @@ type  WebApplication struct {
    resourceUrlPath  string
    InitAppContext *appcontext.AppContext
    InitConfigMap  ConfigMap
+   RegistTypeList []reflect.Type
 }
 
 type ConfigMap struct {
@@ -122,6 +123,7 @@ func initDefaultInterceptorFuncMap() map[string]interceptor.InterceptorFunc {
 func New(appContext *appcontext.AppContext, configMap ConfigMap) *WebApplication {
    if webApp == nil {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
+      webApp.RegistTypeList = make([]reflect.Type,0)
       webApp.InitAppContext = appContext
       webApp.InitConfigMap = configMap
       InitDefaultConvertFunction(appContext)
@@ -288,6 +290,9 @@ func (web *WebApplication) Start() {
        return
     }
     web.WorkProcess.Init_Default()
+    for _,registType := range web.RegistTypeList {
+       session.RegisterType(registType)
+    }
     session.StartSessionManager()
     go startCommanListener(web)
     res := <- web.control
@@ -297,6 +302,9 @@ func (web *WebApplication) Start() {
     }
 }
 
+func (web *WebApplication) RegistType(val interface{}) {
+  web.RegistTypeList = append(web.RegistTypeList,reflect.TypeOf(val))
+}
 
 func (web *WebApplication) Stop() {
     web.control <- 1

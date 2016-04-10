@@ -9,6 +9,7 @@ import (
   "os"
   "io"
   "bufio"
+  "encoding/gob"
 )
 
 var SESSION_FILE string
@@ -83,8 +84,10 @@ func (provider *MemorySessionProvider)  LoadSessionById(sessionId string) (sessi
   }
 }
 
-
-func (provider *MemorySessionProvider) SerializeSession(){
+func (provider *MemorySessionProvider) SerializeSession(sessionTypeInfo  map[string] interface{} ){
+   for _,reflectValue := range sessionTypeInfo {
+     gob.Register(reflectValue)
+   }
    pwd, _ := os.Getwd()
    if err := os.MkdirAll(pwd + SESSION_FOLDER, 0777); err != nil {
        log.Error(err)
@@ -122,13 +125,18 @@ func (provider *MemorySessionProvider) SerializeSession(){
    w.Flush()
 }
 
-func (provider *MemorySessionProvider) DeserializeSession(){
+func (provider *MemorySessionProvider) DeserializeSession(sessionTypeInfo  map[string] interface{}){
+  for _,reflectValue := range sessionTypeInfo {
+     gob.Register(reflectValue)
+  }
   pwd, _ := os.Getwd()
   file1, err := os.Open(pwd + SESSION_FILE)
   if err == nil {
       reader := bufio.NewReaderSize(file1, 4096)
+      defer file1.Close()
       for {
         line, _, errinfo := reader.ReadLine()
+        log.Debug(line)
         if errinfo == io.EOF {
             break
         } else if errinfo != nil {
@@ -141,10 +149,9 @@ func (provider *MemorySessionProvider) DeserializeSession(){
         }
       }
   }
-  defer file1.Close()
-
   file2, err2 := os.Open(pwd + SESSION_INFO_FILE)
   if err2 == nil {
+      defer file2.Close()
       reader := bufio.NewReaderSize(file2, 4096)
       for {
          line, _, errinfo := reader.ReadLine()
@@ -160,6 +167,5 @@ func (provider *MemorySessionProvider) DeserializeSession(){
          }
       }
   }
-  defer file2.Close()
 }
 

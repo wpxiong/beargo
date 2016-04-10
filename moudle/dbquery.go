@@ -790,7 +790,8 @@ func (this *Moudle) SimpleQuery(tableObj interface{}) *DbSqlBuilder {
    structName := reflect.TypeOf(tableObj).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       info.tableInfo = val
-      info.sqlQuery = "select * from " + info.tableInfo.TableName;
+      columnlist := this.listTableColumn(info.tableInfo,1)
+      info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 " 
    }else {
      log.Error("not found the table relation with struct :" + structName)
    }

@@ -20,7 +20,6 @@ type Session struct {
   SessionValue           map[string] interface{}
 }
 
-
 func (this *Session) InitSession(id string){
   this.SessionId = id
   this.SessionValue = make(map[string] interface{})

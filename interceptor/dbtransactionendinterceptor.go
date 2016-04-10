@@ -14,11 +14,10 @@ func DBtransactionEndinterceptor(app *appcontext.AppContext) bool {
    if app.Trans != nil {
       errorlist := make([]error,len(app.Trans))
       var k int = 0
-      for key,trans := range app.Trans {
+      for _,trans := range app.Trans {
          err := trans.Commit()
          errorlist[k] = err
          k+=1
-         log.ErrorArray(key,err)
       }
       result := true
       for _,errinfo := range errorlist {

@@ -16,8 +16,8 @@ type SessionProvider interface {
    DeleteSession(sessionId string) error
    FindSessionById(sessionId string) bool
    LoadSessionById(sessionId string) (Session ,error)
-   SerializeSession()
-   DeserializeSession()
+   SerializeSession(sessionTypeInfo  map[string] interface{})
+   DeserializeSession(sessionTypeInfo  map[string] interface{})
    ClearSession(sessionAccess  *sync.Mutex)
 }
 

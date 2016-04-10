@@ -11,6 +11,7 @@ import (
   "encoding/hex"
   "net/http"
   "net/url"
+  "reflect"
 )
 
 func init() {
@@ -27,12 +28,15 @@ type sessionManager struct {
   SessionLifeTime  int64 //second
   SessionProviderMap  map[string] SessionProvider
   sessionAccess  *sync.Mutex
+  SessionValueStructName  map[string] interface{}
 }
+
 
 var sessionmanager *sessionManager = nil
 
 func initSessionProvider (session_manager *sessionManager,provider SessionProvider) {
   session_manager.Sessionprovider = provider
+  session_manager.SessionValueStructName = make(map[string] interface{})
   provider.InitProvider(session_manager.SessionLifeTime)
 }
 
@@ -71,7 +75,7 @@ func generateId() string {
 }
 
 func StartSessionManager() {
-   sessionmanager.Sessionprovider.DeserializeSession()
+   sessionmanager.Sessionprovider.DeserializeSession(sessionmanager.SessionValueStructName)
    go sessionmanager.startSessionManagerListener()
 }
 
@@ -84,7 +88,7 @@ func (this* sessionManager ) startSessionManagerListener() {
 
 
 func StopSessionManager() {
-   sessionmanager.Sessionprovider.SerializeSession()
+   sessionmanager.Sessionprovider.SerializeSession(sessionmanager.SessionValueStructName)
 }
 
 
@@ -157,4 +161,10 @@ func (this *sessionManager ) CreateNewSession() Session {
 
 func GetInvalidateTime(timeOut int64 ) time.Time {
    return time.Now().Add(time.Second * time.Duration(timeOut))
+}
+
+func  RegisterType(val interface{}) {
+  if _,ok := sessionmanager.SessionValueStructName[reflect.TypeOf(val).Kind().String()] ; !ok {
+    sessionmanager.SessionValueStructName[reflect.TypeOf(val).Kind().String()] = val
+  }
 }
