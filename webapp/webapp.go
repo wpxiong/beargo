@@ -203,7 +203,7 @@ func startDBConfig(cfx *appcontext.AppContext){
            notype = true
       }
       if !notype {
-         dbsession := moudle.CreateModuleInstance(dialect_type,dbconf.DB_Name,dbconf.DB_Url,dbconf.DB_User,dbconf.DB_Pass)
+         dbsession := moudle.CreateModuleInstance(dialect_type,dbconf.DB_Name,dbconf.DB_Url,dbconf.DB_User,dbconf.DB_Pass,dbconf.DB_Url_Parameter)
          if dbsession.ConnectionStatus {
             cfx.DBSession[dbconf.DB_Session_Name]  = dbsession
          }else {

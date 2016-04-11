@@ -79,6 +79,7 @@ type Moudle struct {
   DbConnectionUrl  string
   DbUserName       string
   DbPassword       string
+  DbUrlParameter   string
   DbTableInfoByTableName       map[string]*DBTableInfo
   DbTableInfoByStructName      map[string]*DBTableInfo
   DbProiver        DbProviderInterface
@@ -87,8 +88,8 @@ type Moudle struct {
   RelationMap      map[string]interface{}
 }
 
-func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string) *Moudle {
-   moudle :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword,RelationInfoList:make([]RelationInfo,0,0)}
+func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl string, DbUserName string,DbPassword string,DbParameter string) *Moudle {
+   moudle :=  &Moudle{DbDialect:DbDialect,DbName:DbName,DbConnectionUrl:DbConnectionUrl,DbUserName:DbUserName,DbPassword:DbPassword,DbUrlParameter:DbParameter,RelationInfoList:make([]RelationInfo,0,0)}
    moudle.initModuleInstance()
    return moudle
 }
@@ -96,10 +97,15 @@ func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl 
 func (this *Moudle) initModuleInstance(){
    this.DbTableInfoByTableName = make(map[string]*DBTableInfo)
    this.DbTableInfoByStructName = make(map[string]*DBTableInfo)
+   var urlParameter = "?"
+   if len(this.DbUrlParameter) > 0 {
+      urlParameter += this.DbUrlParameter + "&"
+   }
    var connectionUrl string  
    switch this.DbDialect {
       case MYSQL :
-        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName + "?parseTime=true"
+        connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName + urlParameter + "parseTime=true"
+        log.Debug(connectionUrl)
         this.DbProiver = &MysqlDBProvider{}
       case POSTGRESQL :
    }

@@ -28,6 +28,7 @@ type DBConnectionInfo struct {
    DB_User  string
    DB_Pass  string
    DB_Session_Name string
+   DB_Url_Parameter string
 }
 
 type AppConfigContext struct {
@@ -126,7 +127,8 @@ func (ctx *AppConfigContext) LoadConfig() {
           }
           words := strings.Split(line,"=")
           if len(words) >= 2 { 
-            pamname,pamval := words[0],words[1]
+            startPos := len(words[0]) + 1
+            pamname,pamval := words[0],string(line[startPos:])
             pamname = strings.Trim(pamname," ")
             pamval = strings.Trim(pamval," ")
             switch pamname {
@@ -147,6 +149,9 @@ func (ctx *AppConfigContext) LoadConfig() {
                  continue
              case constvalue.DB_SESSION_NAME:
                  currentDbConfig.DB_Session_Name = pamval
+                 continue
+             case constvalue.DB_URL_PARAMETER:
+                 currentDbConfig.DB_Url_Parameter = pamval
                  continue
              default:
             }

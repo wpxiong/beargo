@@ -49,7 +49,7 @@ func TestMoudle(){
 }
 
 func Testmoudle1() {
-   moudleInstance :=  moudle.CreateModuleInstance(moudle.MYSQL,"test","tcp(localhost:3306)","","") 
+   moudleInstance :=  moudle.CreateModuleInstance(moudle.MYSQL,"test","tcp(localhost:3306)","","","") 
    
    moudleInstance.AddTable(UserInfo{})
    moudleInstance.AddTable(ClassInfo{})

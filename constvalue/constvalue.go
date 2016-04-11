@@ -96,6 +96,7 @@ const (
   DB_USER = "db_user"
   DB_PASSWORD = "db_password"
   DB_SESSION_NAME = "db_session_name"
+  DB_URL_PARAMETER = "db_url_parameter"
   DEFAULT_DB_SESSION_NAME = "default_db_session"
   
   DB_CONFIG_SECTION = "DB_CONFIG"
