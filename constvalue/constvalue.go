@@ -123,7 +123,7 @@ var DEFULT_AFTER_interceptor []string
 
 func init(){
   DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor","Sessioninterceptor","Xsrfinterceptor","DBtransactionStartinterceptor"}
-  DEFULT_AFTER_interceptor = []string {"Redirectinterceptor","DBtransactionEndinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
+  DEFULT_AFTER_interceptor = []string {"DBtransactionEndinterceptor","Redirectinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
   
   DEFAULT_ERROR_403_PATH = strings.Replace(DEFAULT_ERROR_403_PATH, "/", string(os.PathSeparator), -1)
   DEFAULT_ERROR_404_PATH = strings.Replace(DEFAULT_ERROR_404_PATH, "/", string(os.PathSeparator), -1)
