@@ -15,6 +15,7 @@ import (
   "github.com/wpxiong/beargo/render/template"
   "github.com/wpxiong/beargo/session"
   "github.com/wpxiong/beargo/session/provider"
+  "github.com/wpxiong/beargo/moudle"
   "github.com/wpxiong/beargo/interceptor/redirectinterceptor"
   "strconv"
   "time"
@@ -45,6 +46,8 @@ type  WebApplication struct {
    IsStart bool
    control  chan int
    resourceUrlPath  string
+   InitAppContext *appcontext.AppContext
+   InitConfigMap  ConfigMap
 }
 
 type ConfigMap struct {
@@ -119,6 +122,8 @@ func initDefaultInterceptorFuncMap() map[string]interceptor.InterceptorFunc {
 func New(appContext *appcontext.AppContext, configMap ConfigMap) *WebApplication {
    if webApp == nil {
       webApp = &WebApplication{WorkProcess : process.New(),RouteProcess : route.NewRouteProcess(appContext) , AppContext : appContext , control:make(chan int ) }
+      webApp.InitAppContext = appContext
+      webApp.InitConfigMap = configMap
       InitDefaultConvertFunction(appContext)
       interceptor.Initinterceptor()
       
@@ -181,6 +186,39 @@ func processRequest(w http.ResponseWriter, r *http.Request){
     }
 }
 
+func startDBConfig(cfx *appcontext.AppContext){
+   dbconflist := cfx.ConfigContext.GetDBConfigParameter()
+   cfx.DBSession = make(map[string]* moudle.Moudle,len(dbconflist))
+   for _,dbconf := range dbconflist {
+      var dialect_type moudle.DbDialectType = moudle.MYSQL
+      var notype bool = false
+      switch dbconf.Dailect_Type {
+         case "sqlite":
+           dialect_type = moudle.SQLITE
+         case "mysql":
+           dialect_type = moudle.MYSQL
+         case "postgresql":
+           dialect_type = moudle.POSTGRESQL
+         default:
+           notype = true
+      }
+      if !notype {
+         dbsession := moudle.CreateModuleInstance(dialect_type,dbconf.DB_Name,dbconf.DB_Url,dbconf.DB_User,dbconf.DB_Pass)
+         if dbsession.ConnectionStatus {
+            cfx.DBSession[dbconf.DB_Session_Name]  = dbsession
+         }else {
+            panic(" DB " + dbconf.DB_Session_Name + " Connection Error")
+         }
+      }
+   }
+}
+
+
+func (web *WebApplication) InitDB(){
+   startDBConfig(web.AppContext)
+}
+
+    
 func startProcess(web *WebApplication){
     requestTimeout := web.AppContext.GetConfigValue(constvalue.REQUEST_TIMEOUT_KEY,constvalue.DEFAULT_REQUEST_TIMEOUT).(string)
     var resqTimeout,respTimeout int
@@ -251,6 +289,7 @@ func (web *WebApplication) Start() {
     }
     web.WorkProcess.Init_Default()
     session.StartSessionManager()
+    go startCommanListener(web)
     res := <- web.control
     if res == 1 {
        process.StopWork(webApp.WorkProcess)
@@ -259,9 +298,37 @@ func (web *WebApplication) Start() {
 }
 
 
+func (web *WebApplication) Stop() {
+    web.control <- 1
+    session.StopSessionManager()
+}
+
+func (web *WebApplication) ReStart() {
+    initAppContext := web.InitAppContext
+    initConfigMap := web.InitConfigMap
+    routeprocess := web.RouteProcess
+    web.control <- 1
+    session.StopSessionManager()
+    app := New(initAppContext,initConfigMap)
+    app.RouteProcess = routeprocess
+    app.Start()
+}
+
+
+
+
 func InitRequestAndResponseAppContext(request *webhttp.HttpRequest , response *webhttp.HttpResponse)  *appcontext.AppContext {
   var appContext *appcontext.AppContext = &appcontext.AppContext{}
   appContext.Request = request
   appContext.Writer = response
   return appContext
+}
+
+func (web *WebApplication) GetDefaultDB() *moudle.Moudle {
+   return  web.AppContext.GetDefaultDB()
+}
+
+
+func (web *WebApplication) GetDBByName(dbname string) *moudle.Moudle {
+   return  web.AppContext.GetDBByName(dbname)
 }

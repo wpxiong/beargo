@@ -34,12 +34,12 @@ type Template struct {
 }
 
 
-func (this *Template) Render(writer *http.ResponseWriter,filepathList []string,output interface{}) error {
+func (this *Template) Render(writer *http.ResponseWriter,filepathList []string,output interface{},errorInfo map[string][]string,useLayout bool,layoutName string) error {
   var err error = nil
   switch this.Templatetype {
     case HTML_TEMPLATE:
       htmltemp := &HtmlTemplate{(*this)}
-      err = htmltemp.RenderHTMLTemplate(writer,filepathList,output)
+      err = htmltemp.RenderHTMLTemplate(writer,filepathList,output,errorInfo,useLayout,layoutName)
     case JSON_TEMPLATE:
     case XML_TEMPLATE:
     case TEXT_TEMPLATE:

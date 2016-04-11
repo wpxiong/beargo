@@ -89,6 +89,18 @@ const (
   DEFAULT_MAX_DB_CONNECTION = 100
   DEFAULT_MIN_DB_CONNECTION = 5
   
+  
+  DB_DIALECT_TYPE = "db_dialecttype"
+  DB_NAME = "db_name"
+  DB_URL = "db_url"
+  DB_USER = "db_user"
+  DB_PASSWORD = "db_password"
+  DB_SESSION_NAME = "db_session_name"
+  DEFAULT_DB_SESSION_NAME = "default_db_session"
+  
+  DB_CONFIG_SECTION = "DB_CONFIG"
+  
+  DEFAULT_LISTEN_PORT = 9010
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"

@@ -20,13 +20,19 @@ type  Indform struct{
 }
 
 
-func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepathList []string,output interface{}) error {
+
+func (this *HtmlTemplate) RenderHTMLTemplate(writer *http.ResponseWriter,filepathList []string,output interface{},errorInfo map[string][]string,useLayout bool,layoutName string) error {
    log.Debug("RenderHTMLTemplate Start")
    tmpl := template.Must(template.ParseFiles(filepathList...))
-   err := tmpl.Execute((*writer), output)
-   (*writer).Header().Set("Content-Type", "text/html")
+   var err error
+   if useLayout == true {
+      err = tmpl.ExecuteTemplate((*writer),layoutName, output)
+   }else {
+      err = tmpl.Execute((*writer),output)
+   }
    if err != nil {
       log.ErrorArray("Render Page Error. Page:" , filepathList)
    }
+   (*writer).Header().Set("Content-Type", "text/html")
    return err
 }

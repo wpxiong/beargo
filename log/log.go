@@ -25,9 +25,25 @@ type logInfo struct {
    timeFormate string
 }
 
+func getLevelMessage(level LogLevel) string {
+   switch level {
+     case DebugLevel:
+        return "DEBUG"
+     case InfoLevel:
+        return "INFO"
+     case TraceLevel:
+        return "TRACE"
+     case ErrorLevel:
+        return "ERROR"
+     default:
+        return "   "    
+   }
+}
+
+
 func (this *logInfo) printArray(level LogLevel,message ... interface{}) {
    if this.loglevel <= level {
-      fmt.Print(time.Now().Format(this.timeFormate) + " ")
+      fmt.Print(time.Now().Format(this.timeFormate) + " " + getLevelMessage(level)  + " ")
       fmt.Println(message)
    }
 }
@@ -35,7 +51,7 @@ func (this *logInfo) printArray(level LogLevel,message ... interface{}) {
 
 func (this *logInfo) printObject(level LogLevel,message interface{}) {
    if this.loglevel <= level {
-     fmt.Print(time.Now().Format(this.timeFormate) + " ")
+     fmt.Print(time.Now().Format(this.timeFormate) + " " + getLevelMessage(level) +" ")
      fmt.Println(message)
    }
 }

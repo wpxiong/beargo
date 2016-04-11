@@ -15,6 +15,8 @@ func init() {
 func RenderOutPutinterceptor(app *appcontext.AppContext) bool {
    log.Debug("RenderOutPutinterceptor Start")
    var renderInfo *render.RenderInfo = app.Renderinfo.(*render.RenderInfo)
-   renderInfo.RenderProcess(renderInfo.OutPutData)
+   renderInfo.UseLayout =  app.UseLayout
+   renderInfo.LayoutName =  app.LayoutName
+   renderInfo.RenderProcess()
    return true
 }

@@ -6,6 +6,8 @@ import (
   "strings"
   "github.com/wpxiong/beargo/log"
   "github.com/wpxiong/beargo/webhttp"
+  "github.com/wpxiong/beargo/moudle"
+  "github.com/wpxiong/beargo/constvalue"
   "reflect"
   "regexp"
   "mime/multipart"
@@ -18,11 +20,21 @@ func init() {
 
 type ConvertFunc func(string)(interface{})
 
+type DBConnectionInfo struct {
+   Dailect_Type  string
+   DB_Name  string
+   DB_Url   string
+   DB_User  string
+   DB_Pass  string
+   DB_Session_Name string
+}
+
 type AppConfigContext struct {
    ConfigPath  string
    Port  int
    ConvertList  map[string] ConvertFunc
    ConfigParam  map[string]interface{}
+   dbconfiglist []DBConnectionInfo
 }
   
 type AppContext struct {
@@ -39,6 +51,12 @@ type AppContext struct {
   redirect       bool
   RedirectPath   string
   FileList       map[string][]multipart.File
+  Trans          map[string]* moudle.Trans
+  DBSession      map[string]* moudle.Moudle
+  ErrorInfo      map[string] []string
+  RenderData     map[string] interface{}
+  UseLayout    bool
+  LayoutName   string
 }
 
 func (ctx *AppContext)  IsRedirect() bool{
@@ -88,37 +106,66 @@ func readLines(path string) (lines []string, err error) {
 
 func (ctx *AppConfigContext) LoadConfig() {
    pwd, _ := os.Getwd()
+   ctx.dbconfiglist = make([]DBConnectionInfo,0)
    lines,error := readLines(pwd + ctx.ConfigPath)
    if error != nil {
       log.Error("read config file error!")
    }else{
-      for _,line := range lines {
-        line = strings.Trim(line," ")
-        if len(line) == 0 || strings.HasPrefix(line,"#"){
-           continue
-        }
-        words := strings.Split(line,"=")
-        if len(words) >= 2 { 
-           pamname,pamval := words[0],words[1]
-           pamname = strings.Trim(pamname," ")
-           var pamvalList []string 
-           var isArray bool = true
-           pamval = strings.Trim(pamval," ")
-           result,err := regexp.MatchString(`^\[.*\]$`,pamval)
-           if !result || err != nil {
+     var currentDbConfig *DBConnectionInfo = nil
+     for _,line := range lines {
+       line = strings.Trim(line," ")
+       if len(line) == 0 || strings.HasPrefix(line,"#"){
+          continue
+       }else {
+          if line == "[" + constvalue.DB_CONFIG_SECTION + "]" {
+            if currentDbConfig != nil {
+               ctx.dbconfiglist = append(ctx.dbconfiglist,*currentDbConfig)
+            }
+            currentDbConfig = &DBConnectionInfo{}
+          }
+          words := strings.Split(line,"=")
+          if len(words) >= 2 { 
+            pamname,pamval := words[0],words[1]
+            pamname = strings.Trim(pamname," ")
+            pamval = strings.Trim(pamval," ")
+            switch pamname {
+             case constvalue.DB_DIALECT_TYPE:
+                 currentDbConfig.Dailect_Type = pamval
+                 continue
+             case constvalue.DB_NAME:
+                 currentDbConfig.DB_Name = pamval
+                 continue
+             case constvalue.DB_URL:
+                 currentDbConfig.DB_Url = pamval
+                 continue
+             case constvalue.DB_USER:
+                 currentDbConfig.DB_User = pamval
+                 continue
+             case constvalue.DB_PASSWORD:
+                 currentDbConfig.DB_Pass = pamval
+                 continue
+             case constvalue.DB_SESSION_NAME:
+                 currentDbConfig.DB_Session_Name = pamval
+                 continue
+             default:
+            }
+            var pamvalList []string 
+            var isArray bool = true
+            result,err := regexp.MatchString(`^\[.*\]$`,pamval)
+            if !result || err != nil {
               isArray = false
-           }else {
+            }else {
               pamvalList = strings.Split(pamval[1:len(pamval)-1],",")
-           }
-           if (pamname != ""){
-             if ctx.ConfigParam[pamname] == nil {
+            }
+            if (pamname != ""){
+              if ctx.ConfigParam[pamname] == nil {
                 if !isArray{
                    ctx.ConfigParam[pamname] = pamval
                 }else {
                    ctx.ConfigParam[pamname] = pamvalList
                 }
-             }else {
-               switch  ctx.ConfigParam[pamname].(type) {
+              }else {
+                switch  ctx.ConfigParam[pamname].(type) {
                   case string:
                      preval := ctx.ConfigParam[pamname].(string)
                      var list []string = make([]string,2)
@@ -140,8 +187,12 @@ func (ctx *AppConfigContext) LoadConfig() {
                }
              }
            }
-        }
-      }
+         }
+       }
+     }
+     if currentDbConfig != nil {
+        ctx.dbconfiglist = append(ctx.dbconfiglist,*currentDbConfig)
+     }
    }
 }
 
@@ -165,6 +216,9 @@ func (ctx *AppContext) AddConvertFunctiont(paramType string,function ConvertFunc
 func (ctx *AppContext) CopyAppContext(frmctx *AppContext) {
    ctx.Data = make(map[interface{}]interface{})
    ctx.ConfigContext = frmctx.ConfigContext
+   ctx.ErrorInfo = make(map[string][]string)
+   ctx.RenderData = make(map[string]interface{})
+   ctx.DBSession = frmctx.DBSession
 }
 
 func (ctx *AppContext) Convert(valStr string,valType string) interface{} {
@@ -193,4 +247,74 @@ func (ctx *AppContext) GetPostFileByParameterName(parameterName string) [] multi
    }else {
       return make([]multipart.File,0) 
    }
+}
+
+func (ctx *AppConfigContext) GetDBConfigParameter() []DBConnectionInfo {
+   return ctx.dbconfiglist
+}
+
+
+func (ctx *AppContext) GetDefaultDB() *moudle.Moudle {
+   for _,val :=  range ctx.DBSession {
+      return val
+   }
+   return nil
+}
+
+
+func (ctx *AppContext) GetDBByName(dbname string) *moudle.Moudle {
+   if val,ok := ctx.DBSession[dbname]; ok {
+      return val
+   }else{
+      return nil
+   }
+}
+
+
+func (ctx *AppContext) GetDefaultDBTransaction() *moudle.Trans {
+   for _,val :=  range ctx.Trans {
+      return val
+   }
+   return nil
+}
+
+
+func (ctx *AppContext) GetDBTranscationByName(dbname string) *moudle.Trans {
+   if val,ok := ctx.Trans[dbname]; ok {
+      return val
+   }else{
+      return nil
+   }
+}
+
+func (ctx *AppContext) SetError(errorKey string,errorMessage string)  {
+   if errorList,ok := ctx.ErrorInfo[errorKey];!ok {
+      errorList = make([]string,1)
+      errorList[0] = errorMessage
+      ctx.ErrorInfo[errorKey] = errorList
+   }else {
+      errorList = append(errorList,errorMessage)
+      ctx.ErrorInfo[errorKey] = errorList
+   }
+}
+
+func (ctx *AppContext) SetRenderData(key string, renderdata interface{})  {
+    ctx.RenderData[key] = renderdata
+}
+
+func (ctx *AppContext) ClearError(errorKey string)  {
+   if _,ok := ctx.ErrorInfo[errorKey];ok {
+      ctx.ErrorInfo[errorKey] = make([]string,0)
+   }
+}
+
+
+func (ctx *AppContext) ClearAllError()  {
+   ctx.ErrorInfo = make(map[string][]string)
+}
+
+
+func (ctx *AppContext) SetLayoutBaseName(baseName string )  {
+   ctx.UseLayout = true
+   ctx.LayoutName = baseName
 }

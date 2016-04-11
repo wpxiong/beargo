@@ -14,15 +14,15 @@ func init() {
 func Xsrfinterceptor(app *appcontext.AppContext) bool {
    log.Debug("Xsrfinterceptor Start")
    var sess session.Session  = session.NewSession(app.Request.HttpRequest , *app.Writer.HttpResponseWriter)
-   if sess.GetSessionValue(constvalue.XSRF_TOKEN) != nil {
+   var sessionValue string
+   if sess.GetSessionValue(constvalue.XSRF_TOKEN,&sessionValue)  {
       var token string 
       if app.Parameter[constvalue.XSRF_TOKEN] == nil {
         return false
       }else {
         token = app.Parameter[constvalue.XSRF_TOKEN].(string)
       }
-      var sessionValue interface{} = sess.GetSessionValue(constvalue.XSRF_TOKEN)
-      if token != sessionValue.(string) {
+      if token != sessionValue {
          return false
       }
    }
