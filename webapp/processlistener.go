@@ -53,13 +53,19 @@ func startCommanListener(web *WebApplication){
    command := new(CommandInterface)
    command.webapp = web
    rpc.Register(command)
-
-   tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:" + strconv.Itoa(constvalue.DEFAULT_LISTEN_PORT))
+   var port string = web.AppContext.GetConfigValue(constvalue.MANAGER_PORT,"").(string)
+   val,err:= strconv.Atoi(port)
+   var managerport int 
+   if err == nil {
+      managerport = val
+   }else {
+      managerport = constvalue.DEFAULT_MANAGER_PORT
+   }
+   var host string = web.AppContext.GetConfigValue(constvalue.MANAGER_HOST,constvalue.DEFAULT_MANAGER_HOST).(string)
+   tcpAddr, err := net.ResolveTCPAddr("tcp", host + ":" + strconv.Itoa(managerport))
    checkError(err)
-
    listener, err := net.ListenTCP("tcp", tcpAddr)
    checkError(err)
-
    for {
       conn, err := listener.Accept()
       if err != nil {

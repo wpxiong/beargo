@@ -24,7 +24,7 @@ func main() {
      command := os.Args[1]
      log.Debug(command)
      
-     client, err := rpc.Dial("tcp",  "127.0.0.1" +  ":" + strconv.Itoa(constvalue.DEFAULT_LISTEN_PORT))
+     client, err := rpc.Dial("tcp",  constvalue.DEFAULT_MANAGER_HOST +  ":" + strconv.Itoa(constvalue.DEFAULT_MANAGER_PORT))
      if err != nil {
         log.ErrorArray("dialing:", err)
      }

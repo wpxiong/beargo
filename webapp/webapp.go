@@ -60,7 +60,7 @@ type ConfigMap struct {
 var webApp *WebApplication
 
 func InitDefaultConvertFunction(appContext *appcontext.AppContext){
-  appContext.InitAppContext(appContext.ConfigContext.ConfigPath ,appContext.ConfigContext.Port)
+  appContext.InitAppContext(appContext.ConfigContext.ConfigPath)
   appContext.AddConvertFunctiont("Int",util.StringToInt)
   appContext.AddConvertFunctiont("Float",util.StringToFloat)
   appContext.AddConvertFunctiont("Double",util.StringToDouble)
@@ -281,7 +281,8 @@ func (web *WebApplication) SetTemplateWorkDictionary(folerpath string){
    render.SetTemplateDir(folerpath)
 }
 
-func (web *WebApplication) Start() {
+
+func start(web *WebApplication )  {
     go startProcess(web)
     if err := render.CompileTemplate();err != nil {
        log.Error(err)
@@ -289,12 +290,20 @@ func (web *WebApplication) Start() {
     }
     web.WorkProcess.Init_Default()
     session.StartSessionManager()
-    go startCommanListener(web)
     res := <- web.control
     if res == 1 {
        process.StopWork(webApp.WorkProcess)
        log.Info("Stop WebApplication")
     }
+  
+}
+
+func (web *WebApplication) Start() {
+   go start(web)
+}
+
+func (web *WebApplication) StartForever() {
+   start(web)
 }
 
 
@@ -331,4 +340,9 @@ func (web *WebApplication) GetDefaultDB() *moudle.Moudle {
 
 func (web *WebApplication) GetDBByName(dbname string) *moudle.Moudle {
    return  web.AppContext.GetDBByName(dbname)
+}
+
+
+func StartCommanListener(web *WebApplication) {
+  startCommanListener(web)
 }

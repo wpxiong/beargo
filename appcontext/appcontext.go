@@ -11,6 +11,7 @@ import (
   "reflect"
   "regexp"
   "mime/multipart"
+  "strconv"
 )
 
 
@@ -196,17 +197,23 @@ func (ctx *AppConfigContext) LoadConfig() {
    }
 }
 
-func (ctx *AppContext) InitAppContext(ConfigPath string , Port int) {
+func (ctx *AppContext) InitAppContext(ConfigPath string) {
    if ctx.ConfigContext == nil {
-      ctx.ConfigContext = &AppConfigContext{ConfigPath :ConfigPath, Port:Port}
+      ctx.ConfigContext = &AppConfigContext{ConfigPath :ConfigPath}
    }
    ctx.ConfigContext.ConvertList = make(map[string]ConvertFunc)
    ctx.ConfigContext.ConfigParam = make(map[string](interface{}))
    if ctx.ConfigContext.ConfigPath != ""{
       ctx.ConfigContext.LoadConfig()
+      var port string = ctx.GetConfigValue(constvalue.LISTEN_PORT,"").(string)
+      val,err:= strconv.Atoi(port)
+      if err == nil {
+         ctx.ConfigContext.Port = val
+      }else {
+         ctx.ConfigContext.Port = constvalue.DEFAULT_LISTEN_PORT
+      }
       log.Info(ctx.ConfigContext.ConfigParam)
    }
-   
 }
 
 func (ctx *AppContext) AddConvertFunctiont(paramType string,function ConvertFunc) {

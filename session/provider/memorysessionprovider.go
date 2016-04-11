@@ -15,6 +15,7 @@ import (
 var SESSION_FILE string
 var SESSION_INFO_FILE string
 var SESSION_FOLDER string
+
 func init() {
   log.InitLog()
   SESSION_FILE = string(os.PathSeparator) + "session" + string(os.PathSeparator) + "session.data"

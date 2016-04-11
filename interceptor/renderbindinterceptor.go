@@ -5,6 +5,7 @@ import (
   "github.com/wpxiong/beargo/appcontext"
   "github.com/wpxiong/beargo/render"
   "github.com/wpxiong/beargo/session"
+  "github.com/wpxiong/beargo/constvalue"
   "reflect"
 )
 
@@ -30,7 +31,7 @@ func makeOutputData(app *appcontext.AppContext) map[string] interface{} {
    request := app.Request.HttpRequest
    response := app.Writer.HttpResponseWriter
    var sess session.Session = session.NewSession(request , *response)
-   output["AppSession"] = sess.SessionValue
+   output[constvalue.APP_SESSION_DATA] = sess.SessionValue
    log.Debug(output)
    return output
 }

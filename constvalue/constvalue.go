@@ -100,7 +100,15 @@ const (
   
   DB_CONFIG_SECTION = "DB_CONFIG"
   
-  DEFAULT_LISTEN_PORT = 9010
+  APP_SESSION_DATA = "AppSession"
+  
+  LISTEN_PORT = "listen_port"
+  MANAGER_PORT = "manager_port"
+  MANAGER_HOST = "manager_host"
+  
+  DEFAULT_MANAGER_HOST = "127.0.0.1"
+  DEFAULT_MANAGER_PORT = 9010
+  DEFAULT_LISTEN_PORT = 9001
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"

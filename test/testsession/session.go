@@ -29,7 +29,6 @@ func TestSession() {
    sessionProviderMap[constvalue.DEFAULT_SESSION_PROVIDER] = &provider.MemorySessionProvider{}
    session.CreateSessionManager(&appCon,sessionProviderMap)
    sessmanager := session.GetSessionManager()
-   sessmanager.SessionValueStructName["User"] = User{} 
    sess := sessmanager.CreateNewSession()
    sess.SaveSessionValue("test", User{UserId:1,Email:"xiongwenping",Password:"xxxxx"})
    sess = sessmanager.CreateNewSession()
