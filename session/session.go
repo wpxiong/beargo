@@ -40,6 +40,9 @@ func (this *Session) SaveSessionValue(valueId string, obj interface{}){
   this.SessionValue[valueId] = obj
 }
 
+func (this *Session) DeleteSessionValue(valueId string){
+  delete(this.SessionValue,valueId)
+}
 
 func (this *Session) GetSessionValue(valueId string,obj interface{})  bool {
     val,ok := this.SessionValue[valueId]
