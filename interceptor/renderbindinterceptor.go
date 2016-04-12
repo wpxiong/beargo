@@ -24,16 +24,13 @@ func makeOutputData(app *appcontext.AppContext) map[string] interface{} {
    for key,val := range app.ErrorInfo {
       output[key] = val
    }
-   log.Debug(app.RenderData)
    for key,val := range app.RenderData {
       output[key] = val
    }
-   
    request := app.Request.HttpRequest
    response := app.Writer.HttpResponseWriter
    var sess session.Session = session.NewSession(request , *response)
    output[constvalue.APP_SESSION_DATA] = sess.SessionValue
-   log.Debug(output)
    return output
 }
 

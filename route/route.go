@@ -192,7 +192,6 @@ func (rtp *RouteInfo ) CallMethod() {
                   appContext.FormType = rinfo.GetFormType()
                   appContext.ControllerMethodInfo = rinfo.GetMethodInfo()
                   appContext.UrlPath = rinfo.UrlPath
-                  log.Debug("11111")
                   rinfo.CallRedirectMethod(appContext)
                }else {
                   log.Error("Redirect URL Error: " + urlArray[0])
