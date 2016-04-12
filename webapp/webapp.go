@@ -16,7 +16,6 @@ import (
   "github.com/wpxiong/beargo/session"
   "github.com/wpxiong/beargo/session/provider"
   "github.com/wpxiong/beargo/moudle"
-  "github.com/wpxiong/beargo/interceptor/redirectinterceptor"
   "strconv"
   "time"
   "os"
@@ -111,11 +110,11 @@ func initDefaultInterceptorFuncMap() map[string]interceptor.InterceptorFunc {
   funcMap[constvalue.ParameterBinderinterceptor] =  interceptor.ParameterBinderinterceptor
   funcMap[constvalue.RenderBindinterceptor] =  interceptor.RenderBindinterceptor
   funcMap[constvalue.RenderOutPutinterceptor] =  interceptor.RenderOutPutinterceptor
-  funcMap[constvalue.Redirectinterceptor] =  redirectinterceptor.Redirectinterceptor
   funcMap[constvalue.Sessioninterceptor] =  interceptor.Sessioninterceptor
   funcMap[constvalue.Xsrfinterceptor] =  interceptor.Xsrfinterceptor
   funcMap[constvalue.DBtransactionStartinterceptor] =  interceptor.DBtransactionStartinterceptor
   funcMap[constvalue.DBtransactionEndinterceptor] =  interceptor.DBtransactionEndinterceptor
+  funcMap[constvalue.ResourceCleaninterceptor] =  interceptor.ResourceCleaninterceptor
   return funcMap
 }
 

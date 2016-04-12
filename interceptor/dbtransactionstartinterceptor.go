@@ -12,7 +12,7 @@ func init() {
 
 func DBtransactionStartinterceptor(app *appcontext.AppContext) bool {
    log.Debug("DBtransactionStartinterceptor Start")
-   if app.DBSession != nil {
+   if app.DBSession != nil && app.Trans == nil {
       trans := make(map[string]* moudle.Trans,len(app.DBSession))
       for key,dbsession := range app.DBSession {
          trans[key] = dbsession.Begin()

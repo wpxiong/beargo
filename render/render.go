@@ -6,6 +6,7 @@ import (
   "github.com/wpxiong/beargo/render/webtemplate"
   "github.com/wpxiong/beargo/memorycash"
   "github.com/wpxiong/beargo/process"
+  "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/appcontext"
   "os"
   "strings"
@@ -158,6 +159,7 @@ func (this *RenderManager) createRenderInfo(writer *http.ResponseWriter,urlPath 
 func (this *RenderManager) redirectTo(app *appcontext.AppContext ,path string) {
    app.RedirectPath = path
    app.SetRedirect()
+   panic(constvalue.REDIRECT_INFO)
 }
 
 func (this *RenderManager) parseTemplateFile(templateFile *webtemplate.Template) {

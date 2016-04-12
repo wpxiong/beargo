@@ -34,6 +34,7 @@ func Redirectinterceptor(app *appcontext.AppContext) bool {
         app.FormType = rinfo.GetFormType()
         app.ControllerMethodInfo = rinfo.GetMethodInfo()
         app.UrlPath = rinfo.UrlPath
+        log.Debug("11111")
         rinfo.CallRedirectMethod(app)
      }else {
         log.Error("Redirect URL Error: " + urlArray[0])

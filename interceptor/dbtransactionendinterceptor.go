@@ -34,5 +34,6 @@ func DBtransactionEndinterceptor(app *appcontext.AppContext) bool {
          }
       }
    }
+   app.Trans = nil
    return true
 }

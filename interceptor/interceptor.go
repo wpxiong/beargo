@@ -21,8 +21,6 @@ type  interceptor  struct {
 
 var interceptorManager *interceptor 
 
-var redirectinterceptor InterceptorFunc
-
 func Initinterceptor() {
   if interceptorManager == nil {
       interceptorManager = &interceptor{Beforeinterceptor:make([] InterceptorFunc,0),Afterinterceptor:make([] InterceptorFunc,0)}
@@ -94,7 +92,7 @@ func AddInitinterceptor(context *appcontext.AppContext, funcMap map[string]Inter
 
 func AddDefaultinterceptor(){
   AddBeforeinterceptorList(ParameterParseinterceptor,ParameterBinderinterceptor,Sessioninterceptor,Xsrfinterceptor,DBtransactionStartinterceptor)
-  AddAfterinterceptorList(redirectinterceptor,DBtransactionEndinterceptor,RenderBindinterceptor,RenderOutPutinterceptor)
+  AddAfterinterceptorList(DBtransactionEndinterceptor,RenderBindinterceptor,RenderOutPutinterceptor,ResourceCleaninterceptor)
 }
 
 func AddBeforeinterceptorList (InterceptorFunc... InterceptorFunc){
@@ -126,5 +124,3 @@ func (interceptor *interceptor) AddBeforeinterceptor (InterceptorFunc Intercepto
 func (interceptor *interceptor) AddAfterinterceptor (InterceptorFunc InterceptorFunc){
    interceptor.Afterinterceptor = append(interceptor.Afterinterceptor,InterceptorFunc)
 }
-
-

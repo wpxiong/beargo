@@ -11,6 +11,9 @@ import (
   "github.com/wpxiong/beargo/interceptor"
   "github.com/wpxiong/beargo/constvalue"
   "github.com/wpxiong/beargo/render"
+  "net/url"
+  "github.com/wpxiong/beargo/util"
+  "github.com/wpxiong/beargo/util/httprequestutil"
 )
 
 func init() {
@@ -161,7 +164,6 @@ func (rtp *RouteInfo ) CallMethod() {
     appContext.CopyAppContext(routeProcess.ctx)
     rtp.InitAppContext(appContext)
     res := interceptor.ProcessBeforeinterceptor(appContext)
-    defer rtp.ResourceClean(appContext)
     if !res {
        return 
     }
@@ -169,24 +171,48 @@ func (rtp *RouteInfo ) CallMethod() {
     v[0] = reflect.ValueOf(appContext)
     v[1] = reflect.ValueOf(appContext.Form)
     defer func() {
-        if err := recover(); err != nil {
-            log.ErrorArray("Call Controller Method Error",err)
-            //DB Rollback
-            dbRollBack(appContext)
-            //500 Error
-            RedirectTo500(appContext)
+        if err := recover(); err != nil  {
+            if appContext.IsRedirect() {
+               errinfo := err.(string) 
+               if (errinfo != constvalue.REDIRECT_INFO ){
+                  return 
+               }
+               u, err := url.Parse(appContext.RedirectPath)
+               if err != nil {
+                  log.Error("Redirect URL Error")
+                  util.Redirect(constvalue.REDIRECT_ERROR)
+               }
+               q := u.Query()
+               httprequestutil.ParseGetParameter(appContext,q)
+               appContext.ClearRedirect()
+               urlArray := strings.Split(appContext.RedirectPath,"?")
+               rinfo := &RouteInfo{UrlParamInfo: []ParaInfo{}}
+               res := GetRouteProcess().UrlRoute(urlArray[0],rinfo)
+               if res {
+                  appContext.FormType = rinfo.GetFormType()
+                  appContext.ControllerMethodInfo = rinfo.GetMethodInfo()
+                  appContext.UrlPath = rinfo.UrlPath
+                  log.Debug("11111")
+                  rinfo.CallRedirectMethod(appContext)
+               }else {
+                  log.Error("Redirect URL Error: " + urlArray[0])
+               }
+            }else {
+               log.ErrorArray("Call Controller Method Error",err)
+               //500 Error
+               RedirectTo500(appContext)
+            }
         }
-        appContext.DestoryAppContext()
     }()
     
     beforeFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.BEFORE_FUNC)
-    afterFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.AFTER_FUNC)
     var result []reflect.Value = beforeFunc.Call(v)
-
+    
     if (result[0].Interface()).(bool) == false {
-      return 
+      return
     }
     
+    afterFunc := reflect.ValueOf(rtp.controller).MethodByName(constvalue.AFTER_FUNC) 
     funcmap.Call(v)
     result = afterFunc.Call(v)
 
@@ -196,22 +222,10 @@ func (rtp *RouteInfo ) CallMethod() {
     
     res = interceptor.ProcessAfterinterceptor(appContext)
     if !res {
-       return 
+       return
     }
 }
 
-func dbRollBack(app *appcontext.AppContext) {
-   log.Debug("DBtransaction RollBack")
-   if  app.Trans != nil {
-       for key,trans := range app.Trans {
-          err := trans.Rollback()
-          if err != nil {
-            log.ErrorArray(key,err)
-          }
-       }
-   }
-   app.Trans = nil
-}
 
 func (rtp *RouteProcess ) match(urlcom []string,index int , treeNodemap map[string]*TreeNode, paraList *[][]ParaInfo) (bool, controller.ControllerMethod,*reflect.Value,*reflect.Method,reflect.Type,string) {
    *paraList = (append(*paraList,[]ParaInfo{}))

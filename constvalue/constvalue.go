@@ -41,12 +41,11 @@ const (
   ParameterBinderinterceptor = "ParameterBinderinterceptor"
   RenderBindinterceptor = "RenderBindinterceptor"
   RenderOutPutinterceptor = "RenderOutPutinterceptor"
-  Redirectinterceptor = "Redirectinterceptor"
   Sessioninterceptor = "Sessioninterceptor"
   Xsrfinterceptor = "Xsrfinterceptor"
   DBtransactionEndinterceptor = "DBtransactionEndinterceptor"
   DBtransactionStartinterceptor = "DBtransactionStartinterceptor"
-  
+  ResourceCleaninterceptor = "ResourceCleaninterceptor"
   MemorySessionProvider = "MemorySessionProvider"
   
   
@@ -110,6 +109,8 @@ const (
   DEFAULT_MANAGER_HOST = "127.0.0.1"
   DEFAULT_MANAGER_PORT = 9010
   DEFAULT_LISTEN_PORT = 9001
+  
+  REDIRECT_INFO = "RedircetError"
 )
 
 var  DEFAULT_ERROR_403_PATH = "error/403"
@@ -123,7 +124,7 @@ var DEFULT_AFTER_interceptor []string
 
 func init(){
   DEFULT_BEFORE_interceptor = []string{"ParameterParseinterceptor","ParameterBinderinterceptor","Sessioninterceptor","Xsrfinterceptor","DBtransactionStartinterceptor"}
-  DEFULT_AFTER_interceptor = []string {"DBtransactionEndinterceptor","Redirectinterceptor","RenderBindinterceptor","RenderOutPutinterceptor"}
+  DEFULT_AFTER_interceptor = []string {"DBtransactionEndinterceptor","RenderBindinterceptor","RenderOutPutinterceptor","ResourceCleaninterceptor"}
   
   DEFAULT_ERROR_403_PATH = strings.Replace(DEFAULT_ERROR_403_PATH, "/", string(os.PathSeparator), -1)
   DEFAULT_ERROR_404_PATH = strings.Replace(DEFAULT_ERROR_404_PATH, "/", string(os.PathSeparator), -1)
