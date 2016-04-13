@@ -196,9 +196,15 @@ func (this *PostgresqlDBProvider )   AppendScanComplexField(list *[]interface{})
 }
 
 func (this *PostgresqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []interface{},ts *Trans) {
- log.Debug(sql)
+ sqllist := strings.Split(sql,"?")
+ var sqlstr string = ""
+ for i,val := range sqllist {
+    if i != len(sqllist) -1 {
+      sqlstr += val + "$" + strconv.Itoa(i+1)
+    }  
+ }
  if ts == nil {
-    if smt,err := this.db.Prepare(sql);err == nil {
+    if smt,err := this.db.Prepare(sqlstr);err == nil {
        if _, err1 := smt.Exec(parameter...);err1 != nil {
           panic(err)
        }
@@ -206,7 +212,7 @@ func (this *PostgresqlDBProvider )  PrepareExecuteSQL(sql string ,parameter []in
        panic(err)
     }
  }else {
-    if smt,err := this.db.Prepare(sql);err == nil {
+    if smt,err := this.db.Prepare(sqlstr);err == nil {
        smt = ts.tx.Stmt(smt)
        if _, err1 := smt.Exec(parameter...);err1 != nil {
           panic(err)
