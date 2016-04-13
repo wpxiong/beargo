@@ -6,8 +6,8 @@ import (
   "net/url"
   "mime/multipart"
   "strings"
-  "bytes"
   "encoding/json"
+  "io/ioutil"
   "reflect"
 )
 
@@ -50,7 +50,7 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
     var getParameter url.Values = appContext.Request.HttpRequest.URL.Query()
     var formParameter url.Values
     var filesParameter map[string][]*multipart.FileHeader  
-    contentType := appContext.Request.HttpRequest.Header.Get("Content-Type")
+    contentType := strings.ToLower(appContext.Request.HttpRequest.Header.Get("Content-Type"))
     switch contentType {
       case "application/x-www-form-urlencoded":
         if err := appContext.Request.HttpRequest.ParseForm(); err != nil {
@@ -66,17 +66,19 @@ func ProcessHttpRequestParam(appContext *appcontext.AppContext) {
             filesParameter = appContext.Request.HttpRequest.MultipartForm.File
         }
       case "application/json" :
-        bufbody := new(bytes.Buffer)
-        bufbody.ReadFrom(appContext.Request.HttpRequest.Body)
-        var objmap map[string] interface{}
-        err := json.Unmarshal(bufbody.Bytes(),&objmap)
-        if err != nil {
+         body, err := ioutil.ReadAll(appContext.Request.HttpRequest.Body)
+         if err != nil {
+            log.Error(err)
+         }
+         var objmap map[string] interface{}
+         err = json.Unmarshal(body, &objmap)
+         if err != nil {
             log.Error("process application/json error")
-        } else {
+         }else {
             for key,val := range objmap {
                appContext.Parameter[key] = val
             }
-        }
+         }
     }
     paramMap := MapMerge(getParameter,formParameter)
     for key,value := range *paramMap {
