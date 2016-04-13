@@ -56,6 +56,8 @@ func GetParamValueInt(paramValue interface{}) (int64,error) {
        return int64(paramValue.(int32)),nil
      case int64:
        return paramValue.(int64),nil
+     case float32,float64:
+       return int64(paramValue.(float64)),nil
      case string:
        val,err:= strconv.Atoi(paramValue.(string))
        if err == nil {
@@ -72,6 +74,8 @@ func GetParamValueUint(paramValue interface{}) (uint64,error) {
   switch paramValue.(type) {
      case uint,uint8,uint16,uint32,uint64:
        return paramValue.(uint64),nil
+     case float32,float64:
+       return uint64(paramValue.(float64)),nil
      case string:
        val,err:= strconv.Atoi(paramValue.(string))
        if err == nil {
@@ -223,23 +227,6 @@ func BinderUint(field *reflect.Value , paramValue interface{}){
 
 func BinderString(field *reflect.Value , paramValue interface{}){
    field.SetString(paramValue.(string))
-}
-
-func Binder(field *reflect.Value , paramValue interface{}) {
-  if !field.CanSet() {
-      switch field.Kind() {
-        case reflect.Int:
-          BinderInt(field,paramValue)
-        case reflect.Int8:
-          BinderInt(field,paramValue)
-        case reflect.Int16:
-          BinderInt(field,paramValue)
-        case reflect.Int64:
-          BinderInt(field,paramValue)
-        default:
-          log.Debug("Default Binder")
-      }  
-  }
 }
 
 func BinderParameter(appcon *appcontext.AppContext){
