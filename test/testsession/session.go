@@ -10,7 +10,7 @@ import (
   "time"
 )
 
-type User struct {
+type UserInfo struct {
   UserId int `id:"true"   auto_increment:"true"`
   Email   string  `notnull:"true"     length:"128" `
   Password  string  `notnull:"true"     length:"128" `
@@ -30,7 +30,7 @@ func TestSession() {
    session.CreateSessionManager(&appCon,sessionProviderMap)
    sessmanager := session.GetSessionManager()
    sess := sessmanager.CreateNewSession()
-   sess.SaveSessionValue("test", User{UserId:1,Email:"xiongwenping",Password:"xxxxx"})
+   sess.SaveSessionValue("test", UserInfo{UserId:1,Email:"xiongwenping",Password:"xxxxx"})
    sess = sessmanager.CreateNewSession()
    session.StartSessionManager()
    sess.SaveSessionValue("test2",23)

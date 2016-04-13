@@ -97,17 +97,24 @@ func CreateModuleInstance(DbDialect DbDialectType,DbName string,DbConnectionUrl 
 func (this *Moudle) initModuleInstance(){
    this.DbTableInfoByTableName = make(map[string]*DBTableInfo)
    this.DbTableInfoByStructName = make(map[string]*DBTableInfo)
-   var urlParameter = "?"
-   if len(this.DbUrlParameter) > 0 {
-      urlParameter += this.DbUrlParameter + "&"
-   }
+   var urlParameter = ""
    var connectionUrl string  
    switch this.DbDialect {
       case MYSQL :
+        urlParameter = "?"
+        if len(this.DbUrlParameter) > 0 {
+          urlParameter += this.DbUrlParameter + "&"
+        }
         connectionUrl = this.DbUserName  + ":" + this.DbPassword +   "@" + this.DbConnectionUrl + "/" + this.DbName + urlParameter + "parseTime=true"
         log.Debug(connectionUrl)
         this.DbProiver = &MysqlDBProvider{}
       case POSTGRESQL :
+        if len(this.DbUrlParameter) > 0 {
+          urlParameter += " " + this.DbUrlParameter
+        }
+        connectionUrl = "user=" + this.DbUserName  + " password=" + this.DbPassword +  " host=" + this.DbConnectionUrl + " dbname=" + this.DbName + urlParameter
+        log.Debug(connectionUrl)
+        this.DbProiver = &PostgresqlDBProvider{}
    }
    err := this.DbProiver.ConnectionDb(connectionUrl)
    if err != nil {
