@@ -11,6 +11,7 @@ type AddressInformation struct {
   Addressid int `id:"true"`
   Userid int
   AddressName string  `notnull:"true"     length:"128" `
+  TestFloat   float64 `length:"8"  scala:4`
 }
 
 type ClassInfo struct {
@@ -31,13 +32,13 @@ type GroupInfo struct {
 
 type UserInfo struct {
   Id      int `id:"true"`
-  UserName string   `id:"true"     notnull:"true"     length:"128"     default_value:"testping"`
+  UserName string   `notnull:"true"     length:"128"     default_value:"testping"`
   UserAge  uint16  `default_value:"54"`
   UserSex  bool  `default_value:"true"`
   Test     complex64 `default_value:"12.34,11.78"`
   CreateTime  time.Time
   Addressid  int
-  TestData  []byte   `length:"128"` 
+  TestData  []byte   `length:"400000"` 
   Goup    []GroupInfo `relation_type:"onetomany" column_name:"id" referenced_column_name:"userid"`
   Address  AddressInformation `relation_type:"onetoone" column_name:"addressid" referenced_column_name:"addressid"`
 }
@@ -45,11 +46,13 @@ type UserInfo struct {
 
 
 func TestMoudle(){
+   log.InitLogWithLevel("Debug")
    Testmoudle1()
 }
 
 func Testmoudle1() {
-   moudleInstance :=  moudle.CreateModuleInstance(moudle.MYSQL,"test","tcp(localhost:3306)","","","") 
+   moudleInstance :=  moudle.CreateModuleInstance(moudle.POSTGRESQL,"test","127.0.0.1","postgres","postgres","sslmode=disable") 
+   //moudleInstance :=  moudle.CreateModuleInstance(moudle.MYSQL,"test","tcp(localhost:3306)","","","") 
    
    moudleInstance.AddTable(UserInfo{})
    moudleInstance.AddTable(ClassInfo{})

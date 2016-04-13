@@ -8,6 +8,7 @@ import (
   "strings"
   "reflect"
   "time"
+  "encoding/hex"
   _ "github.com/lib/pq"
 )
 
@@ -77,7 +78,7 @@ func (this *PostgresqlDBProvider ) CreateTable(tableName string,sqlstr string,pr
 
 func  (this *PostgresqlDBProvider ) CreateForeignKey(tableName string ,  keyColumn string, refrenceTableName string, referenceColumnName string) (sql.Result ,error) {
    foreignkeyname := keyColumn + "_" + refrenceTableName + "_" + referenceColumnName
-   sqlstr := "alter table `" + tableName + "` add constraint `" + foreignkeyname  + "` foreign key (`"  + keyColumn + "`) references `" + refrenceTableName + "` (`" + referenceColumnName + "`) on delete cascade on update cascade "
+   sqlstr := "alter table " + tableName + " add constraint " + foreignkeyname  + " foreign key ("  + keyColumn + ") references " + refrenceTableName + "(" + referenceColumnName + ") on delete cascade on update cascade "
    log.Info(sqlstr)
    return this.db.Exec(sqlstr)
 }
@@ -241,6 +242,13 @@ func (this *PostgresqlDBProvider )  GetDBStringType(length int ) string {
 func (this *PostgresqlDBProvider )  GetDBTimeType() string {
   return "TIMESTAMP"
 }
+
+
+func (this *PostgresqlDBProvider ) GetInsertByteDataSql(byteval []byte ) string {
+   return "(decode('" + hex.EncodeToString(byteval) + "', 'hex'))"
+}
+
+
 
 func (this *PostgresqlDBProvider )  GetDBByteArrayType(length int) string {
   return "BYTEA"

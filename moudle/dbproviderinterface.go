@@ -52,5 +52,6 @@ type DbProviderInterface interface {
    SetMinConnection(max int)
    AppendScanComplexField(list *[]interface{})
    TableExistsInDB(tableName string) (bool,error)
+   GetInsertByteDataSql(byteval []byte ) string
 }
 

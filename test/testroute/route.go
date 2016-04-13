@@ -23,7 +23,7 @@ type  Indexform struct{
 
 
 func TestRoute() {
-   log.InitLog()
+   log.InitLogWithLevel("Debug")
    app := &appcontext.AppContext{}
    rt := route.NewRouteProcess(app)
    ctr := &IndexControl{}

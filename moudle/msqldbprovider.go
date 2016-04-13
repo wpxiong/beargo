@@ -8,6 +8,7 @@ import (
   "strings"
   "reflect"
   "time"
+  "encoding/hex"
   _ "github.com/go-sql-driver/mysql"
 )
 
@@ -175,6 +176,10 @@ func (this *MysqlDBProvider )  GetDBComplex128Type() string {
 
 func (this *MysqlDBProvider )  GetDBBoolType() string {
   return "CHAR(1)"
+}
+
+func (this *MysqlDBProvider ) GetInsertByteDataSql(byteval []byte ) string {
+  return  "0x" + hex.EncodeToString(byteval)
 }
 
 func (this *MysqlDBProvider ) GetInsertDBComplex64Sql(val complex128 ) string {

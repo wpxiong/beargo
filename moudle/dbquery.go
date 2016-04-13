@@ -7,7 +7,6 @@ import (
   "time"
   "strconv"
   "database/sql"
-  "encoding/hex"
 )
 
 func init() {
@@ -451,7 +450,7 @@ func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{},field
             case reflect.Slice:
               elemtype := val.FieldType.Elem().Name()
               if elemtype == "uint8" {
-                valstr = "0x" + hex.EncodeToString(value.Interface().([]byte))
+                valstr = this.DbProiver.GetInsertByteDataSql(value.Interface().([]byte))
               }else {
                 continue
               }
@@ -496,7 +495,7 @@ func (this *Moudle)  getFieldValueString(val *ColumnInfo,value *reflect.Value) s
     case reflect.Slice:
        elemtype := val.FieldType.Elem().Name()
        if elemtype == "uint8" {
-         valstr = "0x" + hex.EncodeToString(value.Interface().([]byte))
+          valstr = this.DbProiver.GetInsertByteDataSql(value.Interface().([]byte))
        }
     case reflect.Map:
     case reflect.String:
