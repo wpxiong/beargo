@@ -249,13 +249,13 @@ func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string,ts *
               columnName = val.ColumnName
             } 
          }
-         columnlist := this.listTableColumn(table_info,1)
-         var sqlQuery string = "select "  + strings.Join(columnlist,",") +   " from " + table_info.TableName + " T1 "
+         columnlist := this.listTableColumn(table_info,0)
+         var sqlQuery string = "select "  + strings.Join(columnlist,",") +   " from " + table_info.TableName
          var columnInfo ColumnInfo
          if columnName != "" {
             columnInfo = tableInfo.FiledNameMap[strings.ToLower(columnName)]
             fieldVal := reflect.ValueOf(structObj).Elem().FieldByName(columnInfo.FieldName)
-            sqlQuery += " where T1." + refrencedcolumnName + " = "  + this.getFieldValueString(&columnInfo,&fieldVal)
+            sqlQuery += " where " + refrencedcolumnName + " = "  + this.getFieldValueString(&columnInfo,&fieldVal)
          }else {
              panic("not find the table relation with the interface :" + structName)
          }
@@ -317,7 +317,7 @@ func (this *Moudle) createFieldList(tableInfo *DBTableInfo,structVal interface{}
          columnList = append(columnList,columnInfo.ColumnName)
       }
    }
-   var valueList []string = this.listValue(tableInfo,structVal,keyList)
+   var valueList []string = this.listValue(tableInfo,structVal,keyList,false)
    for i:=0; i<len(columnList) ;i++ {
       keyvalueList = append(keyvalueList, columnList[i] + " = " + valueList[i])
    }
@@ -389,7 +389,11 @@ func (this *Moudle) listTableColumn(tableinfo *DBTableInfo,index int) []string {
    for _,fieldName := range tableinfo.FieldList {
       val := tableinfo.FiledNameMap[fieldName]
       if val.RelationStructName == "" {
-         columnList = append(columnList,"T" + strconv.Itoa(index) + "." + val.ColumnName )
+         if index > 0 {
+           columnList = append(columnList,"T" + strconv.Itoa(index) + "." + val.ColumnName )
+         }else {
+           columnList = append(columnList,val.ColumnName )
+         }
       }
    }
    return columnList
@@ -410,14 +414,15 @@ func (this *Moudle) listColumn(tableinfo *DBTableInfo,fieldList []string) []stri
    return columnList
 }
 
-func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{},fieldNameList []string) []string {
+func (this *Moudle) listValue(tableinfo *DBTableInfo,structVal interface{},fieldNameList []string,insert bool) []string {
    valueList := make([]string,0,0)
    for _,fieldName := range tableinfo.FieldList {
       val := tableinfo.FiledNameMap[fieldName]
       if len(fieldNameList) !=0 && !InSliceStringList(fieldNameList,fieldName) {
           continue
       }
-      if val.RelationStructName == "" && val.AutoIncrement == false {
+      log.Debug(fieldName)
+      if val.RelationStructName == "" && (insert && val.AutoIncrement == false  || !insert) {
          value := reflect.ValueOf(structVal).FieldByName(val.FieldName)
          var valstr string
          switch val.FieldType.Kind(){
@@ -593,7 +598,7 @@ func (this *Moudle) createKeyWhere(tableInfo *DBTableInfo,structVal interface{})
          columnList = append(columnList,columnInfo.ColumnName)
       }
    }
-   var valueList []string = this.listValue(tableInfo,structVal,keyList)
+   var valueList []string = this.listValue(tableInfo,structVal,keyList,false)
    for i:=0; i<len(columnList) ;i++ {
       wherList = append(wherList, columnList[i] + " = " + valueList[i])
    }
@@ -753,7 +758,7 @@ func (this *Moudle) Insert(structVal interface{} ) *DbSqlBuilder {
    structName := reflect.TypeOf(structVal).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       info.tableInfo = val
-      var valuelist []string = this.listValue(val,structVal,[]string{})
+      var valuelist []string = this.listValue(val,structVal,[]string{},true)
       var columnlist []string = this.listColumn(val,[]string{}) 
       sqlstr := "insert into " + val.TableName + "(" + strings.Join(columnlist,",") + ") values (" +  strings.Join(valuelist,",")  +")"
       info.sqlQuery = sqlstr
@@ -791,8 +796,8 @@ func (this *Moudle) Query(tableObj interface{},fetchType FetchType,structName []
         info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 " + info.createJoinSql(structName)
       }else {
         info.tableInfo = val
-        columnlist := this.listTableColumn(info.tableInfo,1)
-        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 "
+        columnlist := this.listTableColumn(info.tableInfo,0)
+        info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName
       }
    }else {
      log.Error("not found the table relation with struct :" + struct_Name)
@@ -807,8 +812,8 @@ func (this *Moudle) SimpleQuery(tableObj interface{}) *DbSqlBuilder {
    structName := reflect.TypeOf(tableObj).Name()
    if val,ok := this.DbTableInfoByStructName[structName]; ok {
       info.tableInfo = val
-      columnlist := this.listTableColumn(info.tableInfo,1)
-      info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName  + " T1 " 
+      columnlist := this.listTableColumn(info.tableInfo,0)
+      info.sqlQuery = "select "  + strings.Join(columnlist,",") +   " from " + info.tableInfo.TableName
    }else {
      log.Error("not found the table relation with struct :" + structName)
    }
@@ -830,14 +835,14 @@ func (this *Moudle) UpdateWithWhere(structVal interface{},fieldName[]string)  *D
       var columnlist []string 
       var columnValueList []string
       if len(fieldName) == 0 {
-         valuelist = this.listValue(val,structVal,[]string{})
+         valuelist = this.listValue(val,structVal,[]string{},false)
          columnlist = this.listColumn(val,[]string{})
       }else {
          fieldList := make([]string,len(fieldName))
          for key,field := range fieldName {
              fieldList[key] = strings.ToLower(field)
          }
-         valuelist = this.listValue(val,structVal,fieldList)
+         valuelist = this.listValue(val,structVal,fieldList,false)
          columnlist = this.listColumn(val,fieldName)
          columnValueList = make([]string,len(valuelist))
          for key,columnName := range columnlist {
