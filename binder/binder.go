@@ -201,11 +201,16 @@ func BinderInt(field *reflect.Value , paramValue interface{}){
 
 
 func BinderBool(field *reflect.Value , paramValue interface{}){
-   if strings.ToLower(paramValue.(string)) == "true" {
-      field.SetBool(true)
-   }else {
-      field.SetBool(false)
-   }
+  switch paramValue.(type) {
+    case bool:
+        field.SetBool(paramValue.(bool))
+    case string:
+     if strings.ToLower(paramValue.(string)) == "true" {
+        field.SetBool(true)
+     }else {
+        field.SetBool(false)
+     }
+  }
 }
 
 
