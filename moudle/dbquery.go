@@ -68,6 +68,7 @@ type DbQueryInfo interface {
    SaveExecute()
    DeleteExecute()
    InsertExecute()
+   GetCurrentSerialValue(structVal interface{}) int64 
 }
 
 
@@ -248,15 +249,17 @@ func (this *Moudle) fetchLazyField(structObj interface{},fieldName []string,ts *
               columnName = val.ColumnName
             } 
          }
-         var sqlQuery string = "select * from " + table_info.TableName
+         columnlist := this.listTableColumn(table_info,1)
+         var sqlQuery string = "select "  + strings.Join(columnlist,",") +   " from " + table_info.TableName + " T1 "
          var columnInfo ColumnInfo
          if columnName != "" {
-            columnInfo = tableInfo.FiledNameMap[columnName]
+            columnInfo = tableInfo.FiledNameMap[strings.ToLower(columnName)]
             fieldVal := reflect.ValueOf(structObj).Elem().FieldByName(columnInfo.FieldName)
-            sqlQuery += " where " + refrencedcolumnName + " = "  + this.getFieldValueString(&columnInfo,&fieldVal)
+            sqlQuery += " where T1." + refrencedcolumnName + " = "  + this.getFieldValueString(&columnInfo,&fieldVal)
          }else {
              panic("not find the table relation with the interface :" + structName)
          }
+         log.Debug(sqlQuery)
          newSqlBuilder.sqlQuery = sqlQuery
          vallist := make([]reflect.Value,0)
          var rows *sql.Rows
