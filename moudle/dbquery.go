@@ -609,6 +609,21 @@ func (this *Moudle)  delete(structVal interface{} ,ts *Trans) {
    }
 }
 
+func (this *Moudle) getCurrentSerialValue(structVal interface{},ts *Trans) int64 {
+   structName := reflect.TypeOf(structVal).Name()
+   if val,ok := this.DbTableInfoByStructName[structName]; ok {
+      for _,columnInfo := range val.FiledNameMap {
+        if columnInfo.IsId && columnInfo.AutoIncrement {
+           return this.DbProiver.GetCurrentSerialValue(val.TableName,columnInfo.ColumnName,ts)
+        }
+      }
+      panic("The Table [" + val.TableName + "] has no Serial column")
+   }else {
+      panic("No table relation with struct: " + structName)
+   }
+   
+}
+
 func (this *Moudle)  deleteWithSql(sql string,parameter []interface{},ts *Trans) {
    this.DbProiver.PrepareExecuteSQL(sql,parameter,ts)
 }
@@ -875,3 +890,6 @@ func (this *Moudle) ExecuteWithSql(sql string,parameter []interface{}) {
    this.executeWithSql(sql,parameter,nil)
 }
 
+func (this *Moudle) GetCurrentSerialValue(structVal interface{}) int64 {
+   return this.getCurrentSerialValue(structVal,nil)
+}

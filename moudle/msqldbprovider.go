@@ -232,6 +232,43 @@ func (this *MysqlDBProvider )  TableExistsInDB(tableName string) (bool,error) {
       return rows.Next(),err
    }
 }
+
+func (this *MysqlDBProvider ) GetCurrentSerialValue(tableName string, columnName string,ts *Trans) int64 {
+   sql := "select last_insert_id()"
+   log.Info(sql)
+   if ts == nil {
+     rows ,err := this.db.Query(sql)
+     if err == nil {
+       if rows.Next() {
+          var res int64 
+          err = rows.Scan(&res)
+          if err == nil {
+            return res
+          }else {
+            panic(err)
+          }
+       }
+     }else {
+        panic(err)
+     }
+   }else {
+     rows ,err := ts.tx.Query(sql)
+     if err == nil {
+       if rows.Next() {
+          var res int64 
+          err = rows.Scan(&res)
+          if err == nil {
+            return res
+          }else {
+            panic(err)
+          }
+       }
+     }else {
+        panic(err)
+     }
+   }
+   panic("get current serial value failture")
+}
    
 func (this *MysqlDBProvider )  GetDBStringType(length int ) string {
   if length < 65535 {

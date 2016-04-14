@@ -53,5 +53,6 @@ type DbProviderInterface interface {
    AppendScanComplexField(list *[]interface{})
    TableExistsInDB(tableName string) (bool,error)
    GetInsertByteDataSql(byteval []byte ) string
+   GetCurrentSerialValue(tableName string, columnName string,tx *Trans) int64
 }
 

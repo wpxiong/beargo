@@ -95,6 +95,7 @@ func readLines(path string) (lines []string, err error) {
     if error != nil {
        return make([]string,0),error
     }
+    defer filereader.Close()
     scanner := bufio.NewScanner(filereader)
 	for scanner.Scan() {
 	    linesarray = append(linesarray,scanner.Text())

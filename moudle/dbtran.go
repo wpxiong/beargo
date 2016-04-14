@@ -115,3 +115,7 @@ func (this *Trans)  Delete(structVal interface{} ) {
 func (this *Trans)  FetchLazyField(structVal interface{},fieldName []string ) {
   this.moudle.fetchLazyField(structVal,fieldName,this)
 }
+
+func (this *Trans) GetCurrentSerialValue(structVal interface{}) int64 {
+  return this.moudle.getCurrentSerialValue(structVal,this)
+}

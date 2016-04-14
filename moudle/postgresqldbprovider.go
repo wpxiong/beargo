@@ -305,6 +305,42 @@ func (this *PostgresqlDBProvider )  CreateDefaultValue(defaultValue interface{})
   return ""
 }
 
+func (this *PostgresqlDBProvider ) GetCurrentSerialValue(tableName string, columnName string,ts *Trans) int64 {
+  sql := "select currval('" + tableName + "_"  + columnName + "_" + "seq')"
+  log.Info(sql)
+  if ts == nil {
+     rows ,err := this.db.Query(sql)
+     if err == nil {
+       if rows.Next() {
+          var res int64 
+          err = rows.Scan(&res)
+          if err == nil {
+            return res
+          }else {
+            panic(err)
+          }
+       }
+     }else {
+        panic(err)
+     }
+  }else {
+     rows ,err := ts.tx.Query(sql)
+     if err == nil {
+       if rows.Next() {
+          var res int64 
+          err = rows.Scan(&res)
+          if err == nil {
+            return res
+          }else {
+            panic(err)
+          }
+       }
+     }else {
+        panic(err)
+     }
+  }
+  panic("get current serial value failture")
+}
 
 func (this *PostgresqlDBProvider ) CreateSqlTypeByLength(auto_increment bool ,sqlType string,length int, scale int) string {
    result := sqlType
