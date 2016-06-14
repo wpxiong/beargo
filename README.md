@@ -18,3 +18,4 @@ current versin 1.0 has released
 the demo application :
 https://github.com/wpxiong/samplebeargo
 
+http://qiita.com/wpxiong/items/2aece1eb035e1acf8774
